@@ -1,0 +1,16 @@
+form lala {
+    field f1 {
+        type "number"
+        comp my_comp
+    }
+    field f2 {
+        type "number"
+        comp my_comp
+    }
+    form nested {}
+}
+
+
+form lala2 {
+    form nested {}
+}

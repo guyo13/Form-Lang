@@ -1,0 +1,15 @@
+{
+    "projectName": "FormLang",
+    "languages": [{
+        "id": "form-lang",
+        "grammar": "src/language/form-lang.langium",
+        "fileExtensions": [".form"],
+        "textMate": {
+            "out": "syntaxes/form-lang.tmLanguage.json"
+        },
+        "monarch": {
+            "out": "src/syntaxes/form-lang.monarch.ts"
+        }
+    }],
+    "out": "src/language/generated"
+}
