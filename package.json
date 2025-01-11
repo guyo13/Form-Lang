@@ -5,7 +5,9 @@
   "files": [
     "bin",
     "out",
-    "src"
+    "src",
+    "language-configuration.json",
+    "syntaxes"
   ],
   "type": "module",
   "scripts": {
@@ -23,7 +25,8 @@
     "dev": "vite",
     "dev:debug": "vite --debug --force",
     "serve": "corepack pnpm run dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ext:dev": "vsce package --no-dependencies --allow-missing-repository"
   },
   "dependencies": {
     "@codingame/monaco-vscode-editor-service-override": "~3.2.3",
@@ -35,7 +38,6 @@
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@~3.2.3",
     "monaco-editor-wrapper": "~4.0.2",
     "monaco-languageclient": "~8.1.1",
-    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3",
     "vscode-languageclient": "~9.0.1",
     "vscode-languageserver": "~9.0.1"
   },
@@ -45,6 +47,7 @@
     "@types/vscode": "~1.67.0",
     "@typescript-eslint/eslint-plugin": "~7.3.1",
     "@typescript-eslint/parser": "~7.3.1",
+    "@vscode/vsce": "^3.2.1",
     "concurrently": "~8.2.1",
     "esbuild": "~0.20.2",
     "eslint": "~8.57.0",
@@ -52,7 +55,8 @@
     "langium-cli": "~3.3.0",
     "typescript": "~5.1.6",
     "vite": "~5.2.7",
-    "vitest": "~1.4.0"
+    "vitest": "~1.4.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3"
   },
   "displayName": "form-lang",
   "engines": {

@@ -4,10 +4,20 @@ entry Model:
     (forms+=Form)*;
 
 Form:
-    'form' name=ID '{' (children+=FormChild)* '}';
+    'form' name=ID '{' 
+        (children+=FormChild)*
+    '}';
 
 Field:
-    'field' name=ID '{' ('type' type=STRING)  ('comp' componentId=ID) '}';
+    'field' name=ID '{'
+        (FieldTypeDef & FieldComponentDef)
+    '}';
+
+FieldTypeDef:
+    'type' type=STRING;
+
+FieldComponentDef:
+    'comp' componentId=ID;
 
 FormChild:
     (Form | Field);

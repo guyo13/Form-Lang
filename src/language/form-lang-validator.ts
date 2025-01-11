@@ -11,7 +11,7 @@ export function registerValidationChecks(services: FormLangServices) {
   const validator = services.validation.FormLangValidator;
   const checks: ValidationChecks<FormLangAstType> = {
     Model: validator.uniqueFormIds,
-    Form: validator.uniqueNestedFormIds,
+    Form: validator.validateForm,
   };
   registry.register(checks, validator);
 }
@@ -29,9 +29,12 @@ export class FormLangValidator {
         `Form names should be unique. Form '${propertyValue}' already defined.`
     );
   }
+  validateForm(form: Form, accept: ValidationAcceptor): void {
+    this.uniqueNestedFormIds(form, accept);
+  }
   uniqueNestedFormIds(form: Form, accept: ValidationAcceptor): void {
     return uniquePropertyValidator(
-      form.children.filter((child) => child.$type === "Form"),
+      form.children.filter((child) => child.$type === "Form") as Form[],
       "name",
       accept,
       ({ propertyValue }) =>

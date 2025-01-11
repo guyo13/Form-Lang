@@ -8,3 +8,4 @@ src/language/generated/
 syntaxes/
 .DS_Store
 generated/
+*.vsix
