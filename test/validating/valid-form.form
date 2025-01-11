@@ -1,11 +1,11 @@
 form lala {
     field f1 {
-        type "number"
+        type number
         comp my_comp
     }
     field f2 {
-        type "number"
-        comp my_comp
+        type number
+        comp my_comp prop1="value1" prop2="value2"
     }
     form nested {}
 }
@@ -13,4 +13,9 @@ form lala {
 
 form lala2 {
     form nested {}
+}
+type number {}
+component my_comp {
+    prop1
+    prop2
 }

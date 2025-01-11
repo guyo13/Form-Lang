@@ -1,7 +1,23 @@
 grammar FormLang
 
 entry Model:
-    (forms+=Form)*;
+    (forms+=Form | components+=ComponentDef | typeDefs+=TypeDef)*;
+
+TypeDef:
+    'type' name=ID '{'
+        (properties+=TypeProperty)*
+    '}';
+
+TypeProperty:
+    name=ID ':' type=[TypeDef:ID];
+
+ComponentDef:
+    'component' name=ID '{'
+        (properties+=ComponentDefPropKey)*
+    '}';
+
+ComponentDefPropKey:
+    key=ID;
 
 Form:
     'form' name=ID '{' 
@@ -10,14 +26,17 @@ Form:
 
 Field:
     'field' name=ID '{'
-        (FieldTypeDef & FieldComponentDef)
+        (type=FieldTypeDef & component=FieldComponentDef)
     '}';
 
 FieldTypeDef:
-    'type' type=STRING;
+    'type' type=[TypeDef:ID];
 
 FieldComponentDef:
-    'comp' componentId=ID;
+    'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;
+
+FieldComponentDefPropValue:
+    value=STRING;
 
 FormChild:
     (Form | Field);
@@ -26,6 +45,5 @@ hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;
 terminal INT returns number: /[0-9]+/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
-
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
 hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
