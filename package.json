@@ -15,14 +15,14 @@
     "langium:generate": "langium generate",
     "langium:generate:production": "langium generate --mode=production",
     "langium:watch": "langium generate --watch",
-    "vscode:prepublish": "npm run build && npm run lint",
-    "build:web": "npm run build",
-    "gb": "npm run langium:generate && npm run build",
+    "vscode:prepublish": "corepack pnpm run build && corepack pnpm run lint",
+    "build:web": "corepack pnpm run build",
+    "gb": "corepack pnpm run langium:generate && corepack pnpm run build",
     "bundle": "vite build",
     "bundle:serve": "http-server ./dist --port 5175",
     "dev": "vite",
     "dev:debug": "vite --debug --force",
-    "serve": "npm run dev",
+    "serve": "corepack pnpm run dev",
     "test": "vitest run"
   },
   "dependencies": {
@@ -53,10 +53,6 @@
     "typescript": "~5.1.6",
     "vite": "~5.2.7",
     "vitest": "~1.4.0"
-  },
-  "volta": {
-    "node": "18.19.1",
-    "npm": "10.2.4"
   },
   "displayName": "form-lang",
   "engines": {
@@ -94,5 +90,6 @@
   "main": "./out/extension/main.cjs",
   "bin": {
     "form-lang-cli": "./bin/cli.js"
-  }
+  },
+  "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b"
 }
