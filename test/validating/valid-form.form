@@ -1,20 +1,30 @@
 form lala {
+    comp myform
     field f1 {
-        type number
+        state number
         comp my_comp
     }
     field f2 {
-        type number
+        state number
         comp my_comp prop1="value1" prop2="value2"
     }
-    form nested {}
+    form nested {
+        comp mynestedform
+    }
 }
 
 
 form lala2 {
-    form nested {}
+    comp myform
+    form nested {
+        comp mynestedform
+    }
 }
 type number {}
+
+component myform {}
+component mynestedform {}
+
 component my_comp {
     prop1
     prop2

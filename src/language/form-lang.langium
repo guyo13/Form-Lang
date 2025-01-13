@@ -21,16 +21,17 @@ ComponentDefPropKey:
 
 Form:
     'form' name=ID '{' 
+        component=FieldComponentDef
         (children+=FormChild)*
     '}';
 
 Field:
     'field' name=ID '{'
-        (type=FieldTypeDef & component=FieldComponentDef)
+        (state=FieldStateDef & component=FieldComponentDef)
     '}';
 
-FieldTypeDef:
-    'type' type=[TypeDef:ID];
+FieldStateDef:
+    'state' type=[TypeDef:ID];
 
 FieldComponentDef:
     'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;
