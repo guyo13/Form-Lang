@@ -1,4 +1,6 @@
 import chalk from "chalk";
+import TreeSitterParser, { TreeCursor } from "tree-sitter";
+import * as JavaScriptTreeSitter from "tree-sitter-javascript";
 import { Command } from "commander";
 import * as prettier from "prettier";
 import type { Model } from "../language/generated/ast.js";
@@ -35,7 +37,7 @@ export const generateAction = async (
 
 export const generateReactAction = async (
   fileName: string,
-  opts: GenerateOptions
+  opts: GenerateReactOptions
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
@@ -65,6 +67,40 @@ export const generateReactAction = async (
     parser: "typescript",
   });
   console.log(formattedComponent);
+  if (opts.validate) {
+    const parser = new TreeSitterParser();
+    //@ts-ignore
+    parser.setLanguage(JavaScriptTreeSitter.default);
+    const tree = parser.parse(formattedComponent);
+    let isValid = true;
+
+    const treeCursor = tree.walk();
+    function traverse(cursor: TreeCursor) {
+      if (cursor.nodeType === "ERROR") {
+        isValid = false;
+        console.error(
+          `Syntax error detected: ${cursor.currentNode.text}`,
+          `at (${cursor.startPosition.row}:${cursor.startPosition.column})`
+        );
+      }
+
+      // Move to the first child and traverse it
+      if (cursor.gotoFirstChild()) {
+        do {
+          traverse(cursor); // Recurse into each child
+        } while (cursor.gotoNextSibling()); // Move to the next sibling
+        cursor.gotoParent(); // Return to the parent node after traversing all children
+      }
+    }
+
+    traverse(treeCursor);
+
+    console.log(
+      isValid
+        ? chalk.green(`Generated JSX is valid`)
+        : chalk.red("Generated JSX contains errors!")
+    );
+  }
   // const dumpFilePath = dumpAst(model, services, fileName, opts.destination);
   // console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
@@ -79,9 +115,13 @@ export const dumpAstAction = async (
   console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
 
-export type GenerateOptions = {
+export interface GenerateOptions {
   destination?: string;
-};
+}
+
+export interface GenerateReactOptions extends GenerateOptions {
+  validate?: boolean;
+}
 
 export default function (): void {
   const program = new Command();
@@ -116,6 +156,7 @@ export default function (): void {
       `source file (possible file extensions: ${fileExtensions})`
     )
     .option("-d, --destination <dir>", "destination directory for the output")
+    .option("--validate", "whether tree sitter validation should be run")
     .description("")
     .action(generateReactAction);
   program.parse(process.argv);
