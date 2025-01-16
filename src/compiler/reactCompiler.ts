@@ -125,9 +125,9 @@ export class ReactCompiler {
       formOrField.component.componentPropsKeys,
       formOrField.component.componentPropsValues
     );
-    return `<${componentAlias}${componentProps.map(
-      ([key, val]) => `\n${key.key}={${val.value}}`
-    )} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${
+    return `<${componentAlias}${componentProps
+      .map(([key, val]) => `\n${key.key}={${val.value}}`)
+      .join(" ")} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${
       closed ? "/" : ""
     }>`;
   }
