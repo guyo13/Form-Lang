@@ -27,6 +27,8 @@ export class ReactCompiler {
   constructor(config: ICompilerConfig) {
     this.config = config;
     this.generateForm = this.generateForm.bind(this);
+    this.generateFunctionalComponent =
+      this.generateFunctionalComponent.bind(this);
     this.getNodeChildren = this.getNodeChildren.bind(this);
     this.handleNodeEntry = this.handleNodeEntry.bind(this);
     this.handleNodeExit = this.handleNodeExit.bind(this);
@@ -51,8 +53,13 @@ export class ReactCompiler {
     if (!root.state?.code) {
       throw `Failed generating code for form '${form.name}'`;
     }
+    return this.generateFunctionalComponent(root);
+  }
 
-    return root.state!.code;
+  private generateFunctionalComponent(
+    root: NodeState<Form, NodeTraversalState>
+  ) {
+    return `function ${root.node.name}() {\nreturn (\n${root.state!.code}\n);\n}`;
   }
 
   private getNodeChildren(nodeState: FormFieldNodeState) {

@@ -1,6 +1,7 @@
-import type { Model } from "../language/generated/ast.js";
 import chalk from "chalk";
 import { Command } from "commander";
+import * as prettier from "prettier";
+import type { Model } from "../language/generated/ast.js";
 import { FormLangLanguageMetaData } from "../language/generated/module.js";
 import { createFormLangServices } from "../language/form-lang-module.js";
 import { extractAstNode } from "./cli-util.js";
@@ -60,7 +61,10 @@ export const generateReactAction = async (
   };
   const reactCompiler = new ReactCompiler(config);
   const component = reactCompiler.generateForm(firstForm);
-  console.log(component);
+  const formattedComponent = await prettier.format(component, {
+    parser: "typescript",
+  });
+  console.log(formattedComponent);
   // const dumpFilePath = dumpAst(model, services, fileName, opts.destination);
   // console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
