@@ -1,5 +1,7 @@
 export interface ICompilerConfig {
-  [key: string]: IComponentConfig;
+  components: {
+    [key: string]: IComponentConfig;
+  };
 }
 
 export interface IComponentConfig {

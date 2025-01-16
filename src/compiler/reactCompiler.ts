@@ -148,7 +148,7 @@ export class ReactCompiler {
     if (!componentId) {
       throw `Unresolved componentId reference '${component.componentId.$refText}'`;
     }
-    const componentConfig = this.config[componentId];
+    const componentConfig = this.config.components[componentId];
     if (!componentConfig) {
       throw `Component ${componentId} not configured.`;
     }

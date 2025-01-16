@@ -41,19 +41,21 @@ export const generateReactAction = async (
   const firstForm = model.forms[0];
   // TODO Load from file
   const config = {
-    myform: {
-      path: "",
-      importSymbolName: "MyForm",
-    },
-    my_comp: {
-      path: "",
-      importSymbolName: "default",
-      importSymbolAlias: "MyComp",
-    },
-    mynestedform: {
-      path: "",
-      importSymbolName: "default",
-      importSymbolAlias: "MyNestedForm",
+    components: {
+      myform: {
+        path: "",
+        importSymbolName: "MyForm",
+      },
+      my_comp: {
+        path: "",
+        importSymbolName: "default",
+        importSymbolAlias: "MyComp",
+      },
+      mynestedform: {
+        path: "",
+        importSymbolName: "default",
+        importSymbolAlias: "MyNestedForm",
+      },
     },
   };
   const reactCompiler = new ReactCompiler(config);
