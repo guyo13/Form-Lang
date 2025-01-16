@@ -96,11 +96,10 @@ export class ReactCompiler {
     componentConfig: IComponentConfig
   ): string {
     const openTag = this.generateJsxOpenTag(form, componentConfig);
-    const fieldsCode = children?.map(
-      (nodeState) => `\n${nodeState.state!.code}`
-    );
+    const fieldsCode =
+      children?.map((nodeState) => nodeState.state!.code) ?? [];
     const closeTag = this.generateJsxCloseTag(componentConfig);
-    return `${openTag}${fieldsCode}\n${closeTag}`;
+    return `${openTag}\n${fieldsCode?.join("\n")}${closeTag}`;
   }
 
   private generateFieldCode(
