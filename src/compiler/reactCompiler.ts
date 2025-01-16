@@ -4,6 +4,7 @@ import {
   Form,
   isField,
   isForm,
+  isModel,
 } from "../language/generated/ast.js";
 import { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 
@@ -138,7 +139,16 @@ export class ReactCompiler {
   }
 
   private getDataFormFieldId(formOrField: Form | Field) {
-    return "";
+    const path = [];
+    const frontier = [formOrField];
+    while (frontier.length) {
+      const node = frontier.pop() as Form | Field;
+      path.push(node?.name);
+      if (!isModel(node.$container)) {
+        frontier.push(node.$container);
+      }
+    }
+    return path.reverse().join("-");
   }
 
   private resolveComponentConfig(
