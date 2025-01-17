@@ -6,10 +6,10 @@ entry Model:
 TypeDef:
     'type' name=ID '{'
         (properties+=TypeProperty)*
-    '}';
+    '}'(isArray?='[]')?;
 
 TypeProperty:
-    name=ID ':' type=[TypeDef:ID];
+    name=ID ':' type=[TypeDef:ID](isArray?='[]')?;
 
 ComponentDef:
     'component' name=ID '{'
@@ -31,7 +31,7 @@ Field:
     '}';
 
 FieldStateDef:
-    'state' type=[TypeDef:ID];
+    'state' type=[TypeDef:ID](isArray?='[]')?;
 
 FieldComponentDef:
     'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;

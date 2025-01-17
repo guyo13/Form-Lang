@@ -5,7 +5,7 @@ form LaLaForm {
         comp my_comp
     }
     field f2 {
-        state number
+        state number[]
         comp my_comp prop1="value1" prop2="value2"
     }
     form nested {
