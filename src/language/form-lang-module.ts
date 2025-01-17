@@ -1,32 +1,48 @@
-import { type Module, inject } from 'langium';
-import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
-import { FormLangGeneratedModule, FormLangGeneratedSharedModule } from './generated/module.js';
-import { FormLangValidator, registerValidationChecks } from './form-lang-validator.js';
+import { type Module, inject } from "langium";
+import {
+  createDefaultModule,
+  createDefaultSharedModule,
+  type DefaultSharedModuleContext,
+  type LangiumServices,
+  type LangiumSharedServices,
+  type PartialLangiumServices,
+} from "langium/lsp";
+import {
+  FormLangGeneratedModule,
+  FormLangGeneratedSharedModule,
+} from "./generated/module.js";
+import {
+  FormLangValidator,
+  registerValidationChecks,
+} from "./form-lang-validator.js";
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
 export type FormLangAddedServices = {
-    validation: {
-        FormLangValidator: FormLangValidator
-    }
-}
+  validation: {
+    FormLangValidator: FormLangValidator;
+  };
+};
 
 /**
  * Union of Langium default services and your custom services - use this as constructor parameter
  * of custom service classes.
  */
-export type FormLangServices = LangiumServices & FormLangAddedServices
+export type FormLangServices = LangiumServices & FormLangAddedServices;
 
 /**
  * Dependency injection module that overrides Langium default services and contributes the
  * declared custom services. The Langium defaults can be partially specified to override only
  * selected services, while the custom services must be fully specified.
  */
-export const FormLangModule: Module<FormLangServices, PartialLangiumServices & FormLangAddedServices> = {
-    validation: {
-        FormLangValidator: () => new FormLangValidator()
-    }
+export const FormLangModule: Module<
+  FormLangServices,
+  PartialLangiumServices & FormLangAddedServices
+> = {
+  validation: {
+    FormLangValidator: () => new FormLangValidator(),
+  },
 };
 
 /**
@@ -45,24 +61,24 @@ export const FormLangModule: Module<FormLangServices, PartialLangiumServices & F
  * @returns An object wrapping the shared services and the language-specific services
  */
 export function createFormLangServices(context: DefaultSharedModuleContext): {
-    shared: LangiumSharedServices,
-    FormLang: FormLangServices
+  shared: LangiumSharedServices;
+  FormLang: FormLangServices;
 } {
-    const shared = inject(
-        createDefaultSharedModule(context),
-        FormLangGeneratedSharedModule
-    );
-    const FormLang = inject(
-        createDefaultModule({ shared }),
-        FormLangGeneratedModule,
-        FormLangModule
-    );
-    shared.ServiceRegistry.register(FormLang);
-    registerValidationChecks(FormLang);
-    if (!context.connection) {
-        // We don't run inside a language server
-        // Therefore, initialize the configuration provider instantly
-        shared.workspace.ConfigurationProvider.initialized({});
-    }
-    return { shared, FormLang };
+  const shared = inject(
+    createDefaultSharedModule(context),
+    FormLangGeneratedSharedModule
+  );
+  const FormLang = inject(
+    createDefaultModule({ shared }),
+    FormLangGeneratedModule,
+    FormLangModule
+  );
+  shared.ServiceRegistry.register(FormLang);
+  registerValidationChecks(FormLang);
+  if (!context.connection) {
+    // We don't run inside a language server
+    // Therefore, initialize the configuration provider instantly
+    shared.workspace.ConfigurationProvider.initialized({});
+  }
+  return { shared, FormLang };
 }
