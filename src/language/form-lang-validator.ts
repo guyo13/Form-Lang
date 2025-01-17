@@ -92,7 +92,7 @@ export class FormLangValidator {
   ): void {
     for (const propKey of fieldComponentDef.componentPropsKeys) {
       if (
-        !fieldComponentDef.componentId.ref?.properties?.find(
+        !fieldComponentDef.componentId.ref?.props?.properties?.find(
           (prop) => prop.key === propKey.key
         )
       ) {
@@ -109,12 +109,13 @@ export class FormLangValidator {
     componentDef: ComponentDef,
     accept: ValidationAcceptor
   ): void {
-    return uniquePropertyValidator(
-      componentDef.properties,
-      "key",
-      accept,
-      ({ propertyValue }) =>
-        `ComponentDef property names should be unique. Property '${propertyValue}' already defined.`
-    );
+    componentDef.props &&
+      uniquePropertyValidator(
+        componentDef.props.properties,
+        "key",
+        accept,
+        ({ propertyValue }) =>
+          `ComponentDef property names should be unique. Property '${propertyValue}' already defined.`
+      );
   }
 }
