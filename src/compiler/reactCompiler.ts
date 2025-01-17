@@ -1,6 +1,8 @@
 import {
+  ComponentDefPropKey,
   Field,
   FieldComponentDef,
+  FieldComponentDefPropValue,
   Form,
   isField,
   isForm,
@@ -131,9 +133,12 @@ export class ReactCompiler {
     const componentProps = zip(
       formOrField.component.componentPropsKeys,
       formOrField.component.componentPropsValues
-    );
+    ) as [ComponentDefPropKey, FieldComponentDefPropValue][];
     return `<${componentAlias}${componentProps
-      .map(([key, val]) => `\n${key.key}={${val.value}}`)
+      .map(
+        ([key, val]) =>
+          `\n${key.key}={${val.isExpression ? val.value : `"${val.value}"`}}`
+      )
       .join(" ")} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${
       closed ? "/" : ""
     }>`;

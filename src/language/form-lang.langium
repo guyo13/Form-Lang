@@ -37,7 +37,7 @@ FieldComponentDef:
     'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;
 
 FieldComponentDefPropValue:
-    value=STRING;
+    value=STRING(isExpression?='as' 'expression')?;
 
 FormChild:
     (Form | Field);
