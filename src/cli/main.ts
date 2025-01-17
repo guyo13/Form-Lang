@@ -117,7 +117,12 @@ export const dumpAstAction = async (
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
-  const dumpFilePath = dumpAst(model, services, fileName, opts.destination);
+  const dumpFilePath = await dumpAst(
+    model,
+    services,
+    fileName,
+    opts.destination
+  );
   console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
 
