@@ -14,6 +14,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { dumpAst } from "./dump-ast.js";
 import { ReactCompiler } from "../compiler/reactCompiler.js";
+import { ICompilerConfig } from "../compiler/compilerConfig.js";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 const packagePath = path.resolve(__dirname, "..", "..", "package.json");
@@ -53,6 +54,10 @@ export const generateReactAction = async (
         path: "",
         importSymbolName: "default",
         importSymbolAlias: "MyComp",
+        stateManagement: {
+          valuePropName: "value",
+          valueSetterPropName: "valueSetter",
+        },
       },
       mynestedform: {
         path: "",
@@ -60,7 +65,7 @@ export const generateReactAction = async (
         importSymbolAlias: "MyNestedForm",
       },
     },
-  };
+  } satisfies ICompilerConfig;
   const reactCompiler = new ReactCompiler(config);
   let component;
   try {

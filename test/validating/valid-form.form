@@ -24,6 +24,12 @@ form LaLaForm {
     }
     form nested {
         comp mynestedform
+        field nested_f1 {
+            comp my_comp prop1="(() => 'value1')()" as expression
+        }
+    }
+    field f3 {
+        comp my_comp
     }
 }
 

@@ -16,8 +16,13 @@ interface NodeState<N, S> {
   children?: Array<NodeState<N, S>>;
 }
 
+interface NodeStateDescription {
+  [key: string]: unknown;
+}
+
 interface NodeTraversalState {
   code: string | null;
+  stateDescription: NodeStateDescription | null;
   componentConfig: IComponentConfig | null;
 }
 
@@ -34,7 +39,11 @@ export class ReactCompiler {
     this.getNodeChildren = this.getNodeChildren.bind(this);
     this.handleNodeEntry = this.handleNodeEntry.bind(this);
     this.handleNodeExit = this.handleNodeExit.bind(this);
+    this.generateFormStateDescription =
+      this.generateFormStateDescription.bind(this);
     this.generateFormCode = this.generateFormCode.bind(this);
+    this.generateFieldStateDescription =
+      this.generateFieldStateDescription.bind(this);
     this.generateFieldCode = this.generateFieldCode.bind(this);
     this.getComponentAlias = this.getComponentAlias.bind(this);
     this.generateJsxOpenTag = this.generateJsxOpenTag.bind(this);
@@ -45,7 +54,10 @@ export class ReactCompiler {
 
   public generateForm(form: Form): string {
     // TODO - Validate import aliases clashes
-    const root = { node: form, state: { componentConfig: null, code: null } };
+    const root = {
+      node: form,
+      state: { componentConfig: null, code: null, stateDescription: null },
+    } satisfies FormFieldNodeState;
     traverseDFS(
       root,
       this.getNodeChildren,
@@ -70,7 +82,7 @@ export class ReactCompiler {
       const children = isForm(node) ? node.children : [];
       nodeState.children = children.map((child) => ({
         node: child,
-        state: { componentConfig: null, code: null },
+        state: { componentConfig: null, code: null, stateDescription: null },
       }));
     }
 
@@ -79,42 +91,66 @@ export class ReactCompiler {
 
   private handleNodeEntry(nodeState: FormFieldNodeState) {
     nodeState.state.componentConfig = this.resolveComponentConfig(
-      nodeState.node.component
+      nodeState.node
     );
   }
 
   private handleNodeExit(nodeState: FormFieldNodeState) {
     const node = nodeState.node;
     if (isForm(node)) {
+      nodeState.state!.stateDescription = this.generateFormStateDescription(
+        node,
+        nodeState.children,
+        nodeState.state!
+      );
       nodeState.state!.code = this.generateFormCode(
         node,
         nodeState.children,
-        nodeState.state!.componentConfig!
+        nodeState.state!
       );
     } else if (isField(node)) {
-      nodeState.state!.code = this.generateFieldCode(
+      nodeState.state!.stateDescription = this.generateFieldStateDescription(
         node,
-        nodeState.state!.componentConfig!
+        nodeState.state!
       );
+      nodeState.state!.code = this.generateFieldCode(node, nodeState.state!);
     }
+  }
+
+  private generateFormStateDescription(
+    form: Form,
+    children: FormFieldNodeState["children"],
+    state: NodeTraversalState
+  ): NodeTraversalState["stateDescription"] {
+    // TODO - Implement
+    return null;
   }
 
   private generateFormCode(
     form: Form,
     children: FormFieldNodeState["children"],
-    componentConfig: IComponentConfig
+    state: NodeTraversalState
   ): string {
+    const componentConfig: IComponentConfig = state.componentConfig!;
     const openTag = this.generateJsxOpenTag(form, componentConfig);
     const fieldsCode =
       children?.map((nodeState) => nodeState.state!.code) ?? [];
     const closeTag = this.generateJsxCloseTag(componentConfig);
+
     return `${openTag}\n${fieldsCode?.join("\n")}${closeTag}`;
   }
 
-  private generateFieldCode(
-    field: Field,
-    componentConfig: IComponentConfig
-  ): string {
+  private generateFieldStateDescription(
+    form: Field,
+    state: NodeTraversalState
+  ): NodeTraversalState["stateDescription"] {
+    // TODO - Implement
+    return null;
+  }
+
+  private generateFieldCode(field: Field, state: NodeTraversalState): string {
+    const componentConfig: IComponentConfig = state.componentConfig!;
+
     return this.generateJsxOpenTag(field, componentConfig, true);
   }
 
@@ -162,9 +198,8 @@ export class ReactCompiler {
     return path.reverse().join("-");
   }
 
-  private resolveComponentConfig(
-    component: FieldComponentDef
-  ): IComponentConfig {
+  private resolveComponentConfig(formOrField: Form | Field): IComponentConfig {
+    const component: FieldComponentDef = formOrField.component;
     const componentId = component.componentId.ref?.name;
     if (!componentId) {
       throw `Unresolved componentId reference '${component.componentId.$refText}'`;
@@ -172,6 +207,14 @@ export class ReactCompiler {
     const componentConfig = this.config.components[componentId];
     if (!componentConfig) {
       throw `Component ${componentId} not configured.`;
+    }
+    // Validate that required stateManagement config exists if the field declares state
+    if (
+      isField(formOrField) &&
+      formOrField.state &&
+      !componentConfig.stateManagement
+    ) {
+      throw `Field '${formOrField.name}' declares state but Component config for component '${componentId}' lacks a 'stateManagment' configuration.`;
     }
 
     return componentConfig;
