@@ -18,12 +18,12 @@ Field:
     '}';
 
 FieldStateDef:
-    'state' type=[TypeDef:ID]IsArray;
+    'state' type=[TypeDef:ID]IsArray ('default' defaultValue=ValueExpression)?;
 
 FieldComponentDef:
-    'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;
+    'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=ValueExpression)*;
 
-FieldComponentDefPropValue:
+ValueExpression:
     value=STRING(isExpression?='as' 'expression')?;
 
 FormChild:

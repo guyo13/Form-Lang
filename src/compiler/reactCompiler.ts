@@ -2,7 +2,7 @@ import {
   ComponentDefPropKey,
   Field,
   FieldComponentDef,
-  FieldComponentDefPropValue,
+  ValueExpression,
   Form,
   isField,
   isForm,
@@ -133,7 +133,7 @@ export class ReactCompiler {
     const componentProps = zip(
       formOrField.component.componentPropsKeys,
       formOrField.component.componentPropsValues
-    ) as [ComponentDefPropKey, FieldComponentDefPropValue][];
+    ) as [ComponentDefPropKey, ValueExpression][];
     return `<${componentAlias}${componentProps
       .map(
         ([key, val]) =>
