@@ -14,7 +14,7 @@ Form:
 
 Field:
     'field' name=ID '{'
-        (state=FieldStateDef & component=FieldComponentDef)
+        (state=FieldStateDef)? (component=FieldComponentDef)
     '}';
 
 FieldStateDef:
