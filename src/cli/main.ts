@@ -62,7 +62,13 @@ export const generateReactAction = async (
     },
   };
   const reactCompiler = new ReactCompiler(config);
-  const component = reactCompiler.generateForm(firstForm);
+  let component;
+  try {
+    component = reactCompiler.generateForm(firstForm);
+  } catch (err) {
+    console.error(chalk.red(err));
+    return;
+  }
   const formattedComponent = await prettier.format(component, {
     parser: "typescript",
   });
