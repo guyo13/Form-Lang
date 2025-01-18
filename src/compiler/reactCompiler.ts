@@ -1,9 +1,10 @@
 import {
-  ComponentDefPropKey,
-  Field,
-  FieldComponentDef,
-  ValueExpression,
-  Form,
+  type ComponentDefPropKey,
+  type Field,
+  type FieldComponentDef,
+  type ValueExpression,
+  type Form,
+  type BuiltInType,
   isField,
   isForm,
   isModel,
@@ -17,7 +18,10 @@ interface NodeState<N, S> {
 }
 
 interface NodeStateDescription {
-  [key: string]: unknown;
+  type: BuiltInType;
+  isArray: boolean;
+  defaultValue: ValueExpression | undefined;
+  stateId: string;
 }
 
 interface NodeTraversalState {
@@ -34,6 +38,8 @@ export class ReactCompiler {
   constructor(config: ICompilerConfig) {
     this.config = config;
     this.generateForm = this.generateForm.bind(this);
+    this.generateFormStateSliceCreator =
+      this.generateFormStateSliceCreator.bind(this);
     this.generateFunctionalComponent =
       this.generateFunctionalComponent.bind(this);
     this.getNodeChildren = this.getNodeChildren.bind(this);
@@ -48,11 +54,16 @@ export class ReactCompiler {
     this.getComponentAlias = this.getComponentAlias.bind(this);
     this.generateJsxOpenTag = this.generateJsxOpenTag.bind(this);
     this.generateJsxCloseTag = this.generateJsxCloseTag.bind(this);
+    this.generateStatePropsAssignment =
+      this.generateStatePropsAssignment.bind(this);
     this.getDataFormFieldId = this.getDataFormFieldId.bind(this);
     this.resolveComponentConfig = this.resolveComponentConfig.bind(this);
   }
 
-  public generateForm(form: Form): string {
+  public generateForm(form: Form): {
+    formComponentCode: string;
+    formSliceCreatorCode: string;
+  } {
     // TODO - Validate import aliases clashes
     const root = {
       node: form,
@@ -62,16 +73,46 @@ export class ReactCompiler {
       root,
       this.getNodeChildren,
       this.handleNodeEntry,
-      this.handleNodeExit
+      this.handleNodeExit,
     );
     if (!root.state?.code) {
       throw `Failed generating code for form '${form.name}'`;
     }
-    return this.generateFunctionalComponent(root);
+    const formComponentCode = this.generateFunctionalComponent(root);
+    const formSliceCreatorCode = this.generateFormStateSliceCreator(root);
+
+    return {
+      formComponentCode,
+      formSliceCreatorCode,
+    };
+  }
+
+  private generateFormStateSliceCreator(
+    root: NodeState<Form, NodeTraversalState>,
+  ): string {
+    const sliceCreatorName = `create${capitalize(root.node.name)}Slice`;
+    const sliceState = { stateCode: "" };
+    traverseDFS(
+      root,
+      this.getNodeChildren,
+      (nodeState: FormFieldNodeState) => {
+        if (nodeState.state.stateDescription !== null) {
+          const stateId = nodeState.state.stateDescription.stateId;
+          const defaultValue =
+            nodeState.state.stateDescription.defaultValue?.value ?? "null";
+          const setStateId = `set${capitalize(stateId)}`;
+          sliceState.stateCode += `${stateId}: ${defaultValue},\n`;
+          sliceState.stateCode += `${setStateId}: (newState) => set( (state) => ({ ${stateId}: newState }) ),\n`;
+        }
+      },
+      () => {},
+    );
+    const sliceCreatorBody = `(set) {return {${sliceState.stateCode}};}`;
+    return `function ${sliceCreatorName}${sliceCreatorBody}`;
   }
 
   private generateFunctionalComponent(
-    root: NodeState<Form, NodeTraversalState>
+    root: NodeState<Form, NodeTraversalState>,
   ) {
     return `function ${root.node.name}() {\nreturn (\n${root.state!.code}\n);\n}`;
   }
@@ -91,7 +132,7 @@ export class ReactCompiler {
 
   private handleNodeEntry(nodeState: FormFieldNodeState) {
     nodeState.state.componentConfig = this.resolveComponentConfig(
-      nodeState.node
+      nodeState.node,
     );
   }
 
@@ -101,17 +142,17 @@ export class ReactCompiler {
       nodeState.state!.stateDescription = this.generateFormStateDescription(
         node,
         nodeState.children,
-        nodeState.state!
+        nodeState.state!,
       );
       nodeState.state!.code = this.generateFormCode(
         node,
         nodeState.children,
-        nodeState.state!
+        nodeState.state!,
       );
     } else if (isField(node)) {
       nodeState.state!.stateDescription = this.generateFieldStateDescription(
         node,
-        nodeState.state!
+        nodeState.state!,
       );
       nodeState.state!.code = this.generateFieldCode(node, nodeState.state!);
     }
@@ -120,7 +161,7 @@ export class ReactCompiler {
   private generateFormStateDescription(
     form: Form,
     children: FormFieldNodeState["children"],
-    state: NodeTraversalState
+    state: NodeTraversalState,
   ): NodeTraversalState["stateDescription"] {
     // TODO - Implement
     return null;
@@ -129,10 +170,10 @@ export class ReactCompiler {
   private generateFormCode(
     form: Form,
     children: FormFieldNodeState["children"],
-    state: NodeTraversalState
+    state: NodeTraversalState,
   ): string {
     const componentConfig: IComponentConfig = state.componentConfig!;
-    const openTag = this.generateJsxOpenTag(form, componentConfig);
+    const openTag = this.generateJsxOpenTag(form, state);
     const fieldsCode =
       children?.map((nodeState) => nodeState.state!.code) ?? [];
     const closeTag = this.generateJsxCloseTag(componentConfig);
@@ -141,17 +182,25 @@ export class ReactCompiler {
   }
 
   private generateFieldStateDescription(
-    form: Field,
-    state: NodeTraversalState
+    field: Field,
+    state: NodeTraversalState,
   ): NodeTraversalState["stateDescription"] {
-    // TODO - Implement
-    return null;
+    return field.state
+      ? {
+          type: field.state!.type,
+          isArray: field.state!.isArray,
+          defaultValue: field.state!.defaultValue,
+          stateId: uncapitalize(
+            this.getDataFormFieldId(field, "", (node: Form | Field) =>
+              capitalize(node.name),
+            ),
+          ),
+        }
+      : null;
   }
 
   private generateFieldCode(field: Field, state: NodeTraversalState): string {
-    const componentConfig: IComponentConfig = state.componentConfig!;
-
-    return this.generateJsxOpenTag(field, componentConfig, true);
+    return this.generateJsxOpenTag(field, state, true);
   }
 
   private getComponentAlias(componentConfig: IComponentConfig) {
@@ -162,20 +211,24 @@ export class ReactCompiler {
 
   private generateJsxOpenTag(
     formOrField: Form | Field,
-    componentConfig: IComponentConfig,
-    closed = false
+    state: NodeTraversalState,
+    closed = false,
   ) {
+    const componentConfig: IComponentConfig = state.componentConfig!;
     const componentAlias = this.getComponentAlias(componentConfig);
     const componentProps = zip(
       formOrField.component.componentPropsKeys,
-      formOrField.component.componentPropsValues
+      formOrField.component.componentPropsValues,
     ) as [ComponentDefPropKey, ValueExpression][];
+
     return `<${componentAlias}${componentProps
       .map(
         ([key, val]) =>
-          `\n${key.key}={${val.isExpression ? val.value : `"${val.value}"`}}`
+          `\n${key.key}={${val.isExpression ? val.value : `"${val.value}"`}}`,
       )
-      .join(" ")} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${
+      .join(
+        " ",
+      )} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${this.generateStatePropsAssignment(state)}${
       closed ? "/" : ""
     }>`;
   }
@@ -185,17 +238,30 @@ export class ReactCompiler {
     return `</${componentAlias}>`;
   }
 
-  private getDataFormFieldId(formOrField: Form | Field) {
+  private generateStatePropsAssignment(state: NodeTraversalState) {
+    const containsStateDesc = Boolean(state.stateDescription);
+    const componentConfig: IComponentConfig = state.componentConfig!;
+
+    return containsStateDesc
+      ? `${componentConfig.stateManagement!.valuePropName}={${state.stateDescription!.stateId}}${componentConfig.stateManagement!.valueSetterPropName}={set${capitalize(state.stateDescription!.stateId)}}`
+      : "";
+  }
+
+  private getDataFormFieldId(
+    formOrField: Form | Field,
+    separator = "-",
+    transform = (node: Form | Field): string => node.name,
+  ) {
     const path = [];
     const frontier = [formOrField];
     while (frontier.length) {
       const node = frontier.pop() as Form | Field;
-      path.push(node?.name);
+      path.push(transform(node));
       if (!isModel(node.$container)) {
         frontier.push(node.$container);
       }
     }
-    return path.reverse().join("-");
+    return path.reverse().join(separator);
   }
 
   private resolveComponentConfig(formOrField: Form | Field): IComponentConfig {
@@ -225,7 +291,7 @@ function traverseDFS<T>(
   rootNode: T,
   getChildren: (node: T) => T[],
   onEntry: (node: T, time: number) => void,
-  onExit: (node: T, time: number) => void
+  onExit: (node: T, time: number) => void,
 ): void {
   const visited = new Set<T>();
   let time = 0;
@@ -261,6 +327,14 @@ function zip(...arrays: any[]) {
   // Find the smallest array length to avoid undefined values
   const minLength = Math.min(...arrays.map((arr) => arr.length));
   return Array.from({ length: minLength }, (_, i) =>
-    arrays.map((arr) => arr[i])
+    arrays.map((arr) => arr[i]),
   );
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function uncapitalize(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
 }

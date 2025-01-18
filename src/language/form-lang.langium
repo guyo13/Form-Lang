@@ -18,7 +18,11 @@ Field:
     '}';
 
 FieldStateDef:
-    'state' type=[TypeDef:ID]IsArray ('default' defaultValue=ValueExpression)?;
+    'state' type=(BuiltInType)IsArray ('default' defaultValue=ValueExpression)?;
+
+BuiltInType returns string:
+    ('string' | 'number' | 'boolean');
+
 
 FieldComponentDef:
     'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=ValueExpression)*;

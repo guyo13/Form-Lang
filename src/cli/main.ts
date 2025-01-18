@@ -22,23 +22,23 @@ const packageContent = await fs.readFile(packagePath, "utf-8");
 
 export const generateAction = async (
   fileName: string,
-  opts: GenerateOptions
+  opts: GenerateOptions,
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
   const generatedFilePath = generateJavaScript(
     model,
     fileName,
-    opts.destination
+    opts.destination,
   );
   console.log(
-    chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`)
+    chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`),
   );
 };
 
 export const generateReactAction = async (
   fileName: string,
-  opts: GenerateReactOptions
+  opts: GenerateReactOptions,
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
@@ -67,49 +67,66 @@ export const generateReactAction = async (
     },
   } satisfies ICompilerConfig;
   const reactCompiler = new ReactCompiler(config);
-  let component;
+  let compilerOutput;
   try {
-    component = reactCompiler.generateForm(firstForm);
+    compilerOutput = reactCompiler.generateForm(firstForm);
   } catch (err) {
     console.error(chalk.red(err));
     return;
   }
-  const formattedComponent = await prettier.format(component, {
-    parser: "typescript",
-  });
+  const formattedComponent = await prettier.format(
+    compilerOutput.formComponentCode,
+    {
+      parser: "typescript",
+    },
+  );
+  const formattedSliceCreator = await prettier.format(
+    compilerOutput.formSliceCreatorCode,
+    {
+      parser: "typescript",
+    },
+  );
   console.log(formattedComponent);
+  console.log(formattedSliceCreator);
   if (opts.validate) {
-    const parser = new TreeSitterParser();
-    //@ts-ignore
-    parser.setLanguage(JavaScriptTreeSitter.default);
-    const tree = parser.parse(formattedComponent);
     let isValid = true;
+    try {
+      const parser = new TreeSitterParser();
+      //@ts-ignore
+      parser.setLanguage(JavaScriptTreeSitter.default);
+      const tree = parser.parse(
+        formattedComponent + "\n" + formattedSliceCreator,
+      );
 
-    const treeCursor = tree.walk();
-    function traverse(cursor: TreeCursor) {
-      if (cursor.nodeType === "ERROR") {
-        isValid = false;
-        console.error(
-          `Syntax error detected: ${cursor.currentNode.text}`,
-          `at (${cursor.startPosition.row}:${cursor.startPosition.column})`
-        );
+      const treeCursor = tree.walk();
+      function traverse(cursor: TreeCursor) {
+        if (cursor.nodeType === "ERROR") {
+          isValid = false;
+          console.error(
+            `Syntax error detected: ${cursor.currentNode.text}`,
+            `at (${cursor.startPosition.row}:${cursor.startPosition.column})`,
+          );
+        }
+
+        // Move to the first child and traverse it
+        if (cursor.gotoFirstChild()) {
+          do {
+            traverse(cursor); // Recurse into each child
+          } while (cursor.gotoNextSibling()); // Move to the next sibling
+          cursor.gotoParent(); // Return to the parent node after traversing all children
+        }
       }
 
-      // Move to the first child and traverse it
-      if (cursor.gotoFirstChild()) {
-        do {
-          traverse(cursor); // Recurse into each child
-        } while (cursor.gotoNextSibling()); // Move to the next sibling
-        cursor.gotoParent(); // Return to the parent node after traversing all children
-      }
+      traverse(treeCursor);
+    } catch (error) {
+      console.error(error);
+      isValid = false;
     }
-
-    traverse(treeCursor);
 
     console.log(
       isValid
         ? chalk.green(`Generated JSX is valid`)
-        : chalk.red("Generated JSX contains errors!")
+        : chalk.red("Generated JSX contains errors!"),
     );
   }
   // const dumpFilePath = dumpAst(model, services, fileName, opts.destination);
@@ -118,7 +135,7 @@ export const generateReactAction = async (
 
 export const dumpAstAction = async (
   fileName: string,
-  opts: GenerateOptions
+  opts: GenerateOptions,
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
@@ -126,7 +143,7 @@ export const dumpAstAction = async (
     model,
     services,
     fileName,
-    opts.destination
+    opts.destination,
   );
   console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
@@ -149,18 +166,18 @@ export default function (): void {
     .command("generate")
     .argument(
       "<file>",
-      `source file (possible file extensions: ${fileExtensions})`
+      `source file (possible file extensions: ${fileExtensions})`,
     )
     .option("-d, --destination <dir>", "destination directory of generating")
     .description(
-      'generates JavaScript code that prints "Hello, {name}!" for each greeting in a source file'
+      'generates JavaScript code that prints "Hello, {name}!" for each greeting in a source file',
     )
     .action(generateAction);
   program
     .command("dump-ast")
     .argument(
       "<file>",
-      `source file (possible file extensions: ${fileExtensions})`
+      `source file (possible file extensions: ${fileExtensions})`,
     )
     .option("-d, --destination <dir>", "destination directory for the output")
     .description("Dumps the AST of a given source file into JSON.")
@@ -169,7 +186,7 @@ export default function (): void {
     .command("gen-react")
     .argument(
       "<file>",
-      `source file (possible file extensions: ${fileExtensions})`
+      `source file (possible file extensions: ${fileExtensions})`,
     )
     .option("-d, --destination <dir>", "destination directory for the output")
     .option("--validate", "whether tree sitter validation should be run")

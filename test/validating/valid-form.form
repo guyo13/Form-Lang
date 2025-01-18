@@ -1,5 +1,3 @@
-type number {}
-
 component myform {}
 
 component mynestedform {}
@@ -26,6 +24,12 @@ form LaLaForm {
         comp mynestedform
         field nested_f1 {
             comp my_comp prop1="(() => 'value1')()" as expression
+        }
+        form nested2 {
+            comp mynestedform
+            field nested_f2 {
+            comp my_comp prop1="1" as expression
+        }
         }
     }
     field f3 {
