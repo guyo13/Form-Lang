@@ -98,6 +98,15 @@ export const generateReactAction = async (
           valueSetterPropName: "valueSetter",
         },
       },
+      my_comp2: {
+        path: "",
+        importSymbolName: "default",
+        importSymbolAlias: "MyComp2",
+        stateManagement: {
+          valuePropName: "value",
+          valueSetterPropName: "valueSetter",
+        },
+      },
       mynestedform: {
         path: "",
         importSymbolName: "default",
@@ -109,12 +118,21 @@ export const generateReactAction = async (
   let compilerOutput, formattedComponent, formattedSliceCreator;
   try {
     compilerOutput = reactCompiler.generateForm(firstForm);
-    formattedComponent = await formatJsSource(compilerOutput.formComponentCode);
-    formattedSliceCreator = await formatJsSource(
-      compilerOutput.formSliceCreatorCode,
-    );
-    console.log(formattedComponent);
-    console.log(formattedSliceCreator);
+    if (compilerOutput.status === "error") {
+      for (const error of compilerOutput.errors) {
+        console.error(chalk.red(error));
+        return;
+      }
+    } else {
+      formattedComponent = await formatJsSource(
+        compilerOutput.formComponentCode,
+      );
+      formattedSliceCreator = await formatJsSource(
+        compilerOutput.formSliceCreatorCode,
+      );
+      console.log(formattedComponent);
+      console.log(formattedSliceCreator);
+    }
   } catch (err) {
     console.error(chalk.red(err));
     return;

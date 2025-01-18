@@ -7,11 +7,7 @@ import type {
   Model,
   ValueExpression,
 } from "../language/generated/ast.js";
-import type {
-  ICompilerConfig,
-  IComponentConfig,
-  IComponentImportConfig,
-} from "./compilerConfig.js";
+import type { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 import { isField, isForm, isModel } from "../language/generated/ast.js";
 import { capitalize, traverseDFS, uncapitalize, zip } from "./compilerUtil.js";
 
@@ -32,17 +28,26 @@ interface NodeTraversalState {
   code: string | null;
   stateDescription: NodeStateDescription | null;
   componentConfig: IComponentConfig | null;
+  root: Form;
 }
+
+type GenerateFormOutput =
+  | {
+      status: "success";
+      formComponentCode: string;
+      formSliceCreatorCode: string;
+    }
+  | { status: "error"; errors: string[] };
 
 type FormFieldNodeState = NodeState<Form | Field, NodeTraversalState>;
 
 export class ReactCompiler {
   readonly config: ICompilerConfig;
-  formImports: Record<string, IComponentImportConfig[]>;
+  componentConfigsInForm: Record<string, Set<IComponentConfig>>;
 
   constructor(config: ICompilerConfig) {
     this.config = config;
-    this.formImports = {};
+    this.componentConfigsInForm = {};
     this.compileModel = this.compileModel.bind(this);
     this.generateForm = this.generateForm.bind(this);
     this.generateFormStateSliceCreator =
@@ -69,14 +74,16 @@ export class ReactCompiler {
 
   public compileModel(mode: Model) {}
 
-  public generateForm(form: Form): {
-    formComponentCode: string;
-    formSliceCreatorCode: string;
-  } {
-    // TODO - Validate import aliases clashes
+  public generateForm(form: Form): GenerateFormOutput {
+    this.componentConfigsInForm[form.name] = new Set();
     const root = {
       node: form,
-      state: { componentConfig: null, code: null, stateDescription: null },
+      state: {
+        componentConfig: null,
+        code: null,
+        stateDescription: null,
+        root: form,
+      },
     } satisfies FormFieldNodeState;
     traverseDFS(
       root,
@@ -84,16 +91,43 @@ export class ReactCompiler {
       this.handleNodeEntry,
       this.handleNodeExit,
     );
+    const importClashes = this.findImportAliasClashes(
+      this.componentConfigsInForm[form.name],
+    );
+    if (importClashes.length > 0) {
+      return { errors: importClashes, status: "error" };
+    }
     if (!root.state?.code) {
-      throw `Failed generating code for form '${form.name}'`;
+      return {
+        errors: [`Failed generating code for form '${form.name}'`],
+        status: "error",
+      };
     }
     const formComponentCode = this.generateFunctionalComponent(root);
     const formSliceCreatorCode = this.generateFormStateSliceCreator(root);
 
     return {
+      status: "success",
       formComponentCode,
       formSliceCreatorCode,
     };
+  }
+
+  private findImportAliasClashes(configs: Set<IComponentConfig>) {
+    const clashes = [];
+    const visitedAliases = new Map<string, IComponentConfig>();
+    for (const config of configs.values()) {
+      const alias = this.getComponentAlias(config);
+      if (visitedAliases.has(alias)) {
+        const existingConfig = visitedAliases.get(alias);
+        clashes.push(
+          `Error: import alias '${alias}' from config: ${JSON.stringify(config)} clashes with existing alias from config ${JSON.stringify(existingConfig)}`,
+        );
+      } else {
+        visitedAliases.set(alias, config);
+      }
+    }
+    return clashes;
   }
 
   private generateFormStateSliceCreator(
@@ -132,7 +166,12 @@ export class ReactCompiler {
       const children = isForm(node) ? node.children : [];
       nodeState.children = children.map((child) => ({
         node: child,
-        state: { componentConfig: null, code: null, stateDescription: null },
+        state: {
+          componentConfig: null,
+          code: null,
+          stateDescription: null,
+          root: nodeState.state.root,
+        },
       }));
     }
 
@@ -142,6 +181,9 @@ export class ReactCompiler {
   private handleNodeEntry(nodeState: FormFieldNodeState) {
     nodeState.state.componentConfig = this.resolveComponentConfig(
       nodeState.node,
+    );
+    this.componentConfigsInForm[nodeState.state.root.name].add(
+      nodeState.state.componentConfig,
     );
   }
 

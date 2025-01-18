@@ -9,6 +9,8 @@ component my_comp {
         prop3
     }
 }
+component my_comp2 {
+}
 
 form LaLaForm {
     comp myform
@@ -28,8 +30,8 @@ form LaLaForm {
         form nested2 {
             comp mynestedform
             field nested_f2 {
-            comp my_comp prop1="1" as expression
-        }
+                comp my_comp2
+            }
         }
     }
     field f3 {
