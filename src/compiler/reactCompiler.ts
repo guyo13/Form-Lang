@@ -1,15 +1,18 @@
-import {
-  type BuiltInType,
-  type ComponentDefPropKey,
-  type Field,
-  type FieldComponentDef,
-  type Form,
-  isField,
-  isForm,
-  isModel,
-  type ValueExpression,
+import type {
+  BuiltInType,
+  ComponentDefPropKey,
+  Field,
+  FieldComponentDef,
+  Form,
+  Model,
+  ValueExpression,
 } from "../language/generated/ast.js";
-import { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
+import type {
+  ICompilerConfig,
+  IComponentConfig,
+  IComponentImportConfig,
+} from "./compilerConfig.js";
+import { isField, isForm, isModel } from "../language/generated/ast.js";
 import { capitalize, traverseDFS, uncapitalize, zip } from "./compilerUtil.js";
 
 interface NodeState<N, S> {
@@ -35,9 +38,12 @@ type FormFieldNodeState = NodeState<Form | Field, NodeTraversalState>;
 
 export class ReactCompiler {
   readonly config: ICompilerConfig;
+  formImports: Record<string, IComponentImportConfig[]>;
 
   constructor(config: ICompilerConfig) {
     this.config = config;
+    this.formImports = {};
+    this.compileModel = this.compileModel.bind(this);
     this.generateForm = this.generateForm.bind(this);
     this.generateFormStateSliceCreator =
       this.generateFormStateSliceCreator.bind(this);
@@ -60,6 +66,8 @@ export class ReactCompiler {
     this.getDataFormFieldId = this.getDataFormFieldId.bind(this);
     this.resolveComponentConfig = this.resolveComponentConfig.bind(this);
   }
+
+  public compileModel(mode: Model) {}
 
   public generateForm(form: Form): {
     formComponentCode: string;

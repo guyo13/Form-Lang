@@ -4,14 +4,17 @@ export interface ICompilerConfig {
   };
 }
 
-export interface IComponentConfig {
+export interface IComponentImportConfig {
   path: string;
   importSymbolName: string;
   importSymbolAlias?: string;
-  stateManagement?: IComponentStateManagement;
 }
 
 export interface IComponentStateManagement {
   valuePropName: string;
   valueSetterPropName: string;
+}
+
+export interface IComponentConfig extends IComponentImportConfig {
+  stateManagement?: IComponentStateManagement;
 }
