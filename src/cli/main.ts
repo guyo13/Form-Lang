@@ -36,6 +36,45 @@ export const generateAction = async (
   );
 };
 
+function formatJsSource(source: string): Promise<string> {
+  return prettier.format(source, {
+    parser: "typescript",
+  });
+}
+
+function checkJsAst(source: string): boolean {
+  let isValid = true;
+  const parser = new TreeSitterParser();
+  //@ts-ignore
+  parser.setLanguage(JavaScriptTreeSitter.default);
+  const tree = parser.parse(source);
+
+  const treeCursor = tree.walk();
+  function traverse(cursor: TreeCursor) {
+    if (cursor.nodeType === "ERROR") {
+      isValid = false;
+      console.error(
+        chalk.red(
+          `Syntax error detected: ${cursor.currentNode.text}`,
+          `at (${cursor.startPosition.row}:${cursor.startPosition.column})`,
+        ),
+      );
+    }
+
+    // Move to the first child and traverse it
+    if (cursor.gotoFirstChild()) {
+      do {
+        traverse(cursor); // Recurse into each child
+      } while (cursor.gotoNextSibling()); // Move to the next sibling
+      cursor.gotoParent(); // Return to the parent node after traversing all children
+    }
+  }
+
+  traverse(treeCursor);
+
+  return isValid;
+}
+
 export const generateReactAction = async (
   fileName: string,
   opts: GenerateReactOptions,
@@ -67,70 +106,28 @@ export const generateReactAction = async (
     },
   } satisfies ICompilerConfig;
   const reactCompiler = new ReactCompiler(config);
-  let compilerOutput;
+  let compilerOutput, formattedComponent, formattedSliceCreator;
   try {
     compilerOutput = reactCompiler.generateForm(firstForm);
+    formattedComponent = await formatJsSource(compilerOutput.formComponentCode);
+    formattedSliceCreator = await formatJsSource(
+      compilerOutput.formSliceCreatorCode,
+    );
+    console.log(formattedComponent);
+    console.log(formattedSliceCreator);
   } catch (err) {
     console.error(chalk.red(err));
     return;
   }
-  const formattedComponent = await prettier.format(
-    compilerOutput.formComponentCode,
-    {
-      parser: "typescript",
-    },
-  );
-  const formattedSliceCreator = await prettier.format(
-    compilerOutput.formSliceCreatorCode,
-    {
-      parser: "typescript",
-    },
-  );
-  console.log(formattedComponent);
-  console.log(formattedSliceCreator);
   if (opts.validate) {
-    let isValid = true;
-    try {
-      const parser = new TreeSitterParser();
-      //@ts-ignore
-      parser.setLanguage(JavaScriptTreeSitter.default);
-      const tree = parser.parse(
-        formattedComponent + "\n" + formattedSliceCreator,
-      );
-
-      const treeCursor = tree.walk();
-      function traverse(cursor: TreeCursor) {
-        if (cursor.nodeType === "ERROR") {
-          isValid = false;
-          console.error(
-            `Syntax error detected: ${cursor.currentNode.text}`,
-            `at (${cursor.startPosition.row}:${cursor.startPosition.column})`,
-          );
-        }
-
-        // Move to the first child and traverse it
-        if (cursor.gotoFirstChild()) {
-          do {
-            traverse(cursor); // Recurse into each child
-          } while (cursor.gotoNextSibling()); // Move to the next sibling
-          cursor.gotoParent(); // Return to the parent node after traversing all children
-        }
-      }
-
-      traverse(treeCursor);
-    } catch (error) {
-      console.error(error);
-      isValid = false;
-    }
-
+    const jsSource = formattedComponent + "\n" + formattedSliceCreator;
+    const isValid = checkJsAst(jsSource);
     console.log(
       isValid
         ? chalk.green(`Generated JSX is valid`)
         : chalk.red("Generated JSX contains errors!"),
     );
   }
-  // const dumpFilePath = dumpAst(model, services, fileName, opts.destination);
-  // console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
 };
 
 export const dumpAstAction = async (
