@@ -227,7 +227,7 @@ export class ReactCompiler {
     state: NodeTraversalState,
   ): string {
     const componentConfig: IComponentConfig = state.componentConfig!;
-    const openTag = this.generateJsxOpenTag(form, state);
+    const openTag = this.generateJsxOpenTag(form, state, false);
     const fieldsCode =
       children?.map((nodeState) => nodeState.state!.code) ?? [];
     const closeTag = this.generateJsxCloseTag(componentConfig);
@@ -266,7 +266,7 @@ export class ReactCompiler {
   private generateJsxOpenTag(
     formOrField: Form | Field,
     state: NodeTraversalState,
-    closed = false,
+    isSelfClosingElement: boolean,
   ) {
     const componentConfig: IComponentConfig = state.componentConfig!;
     const componentAlias = this.getComponentAlias(componentConfig);
@@ -283,7 +283,7 @@ export class ReactCompiler {
       .join(
         " ",
       )} dataFormFieldId="${this.getDataFormFieldId(formOrField)}"${this.generateStatePropsAssignment(state)}${
-      closed ? "/" : ""
+      isSelfClosingElement ? "/" : ""
     }>`;
   }
 
