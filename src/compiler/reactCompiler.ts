@@ -25,7 +25,7 @@ interface NodeStateDescription {
 }
 
 interface NodeTraversalState {
-  code: string | null;
+  callSiteCode: string | null;
   stateDescription: NodeStateDescription | null;
   componentConfig: IComponentConfig | null;
   root: Form;
@@ -80,7 +80,7 @@ export class ReactCompiler {
       node: form,
       state: {
         componentConfig: null,
-        code: null,
+        callSiteCode: null,
         stateDescription: null,
         root: form,
       },
@@ -97,7 +97,7 @@ export class ReactCompiler {
     if (importClashes.length > 0) {
       return { errors: importClashes, status: "error" };
     }
-    if (!root.state?.code) {
+    if (!root.state?.callSiteCode) {
       return {
         errors: [`Failed generating code for form '${form.name}'`],
         status: "error",
@@ -159,7 +159,7 @@ export class ReactCompiler {
   private generateFunctionalComponent(
     root: NodeState<Form, NodeTraversalState>,
   ) {
-    return `function ${root.node.name}() {\nreturn (\n${root.state!.code}\n);\n}`;
+    return `function ${root.node.name}() {\nreturn (\n${root.state!.callSiteCode}\n);\n}`;
   }
 
   private getNodeChildren(nodeState: FormFieldNodeState) {
@@ -170,7 +170,7 @@ export class ReactCompiler {
         node: child,
         state: {
           componentConfig: null,
-          code: null,
+          callSiteCode: null,
           stateDescription: null,
           root: nodeState.state.root,
         },
@@ -198,7 +198,7 @@ export class ReactCompiler {
         nodeState.children,
         nodeState.state!,
       );
-      nodeState.state!.code = this.generateFormCode(
+      nodeState.state!.callSiteCode = this.generateFormCode(
         node,
         nodeState.children,
         nodeState.state!,
@@ -208,7 +208,10 @@ export class ReactCompiler {
         node,
         nodeState.state!,
       );
-      nodeState.state!.code = this.generateFieldCode(node, nodeState.state!);
+      nodeState.state!.callSiteCode = this.generateFieldCode(
+        node,
+        nodeState.state!,
+      );
     }
   }
 
@@ -229,7 +232,7 @@ export class ReactCompiler {
     const componentConfig: IComponentConfig = state.componentConfig!;
     const openTag = this.generateJsxOpenTag(form, state, false);
     const fieldsCode =
-      children?.map((nodeState) => nodeState.state!.code) ?? [];
+      children?.map((nodeState) => nodeState.state!.callSiteCode) ?? [];
     const closeTag = this.generateJsxCloseTag(componentConfig);
 
     return `${openTag}\n${fieldsCode?.join("\n")}${closeTag}`;
