@@ -121,8 +121,8 @@ export const generateReactAction = async (
     if (compilerOutput.status === "error") {
       for (const error of compilerOutput.errors) {
         console.error(chalk.red(error));
-        return;
       }
+      return;
     } else {
       formattedComponent = await formatJsSource(
         compilerOutput.formComponentCode,

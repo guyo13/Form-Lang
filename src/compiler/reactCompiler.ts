@@ -43,7 +43,7 @@ type FormFieldNodeState = NodeState<Form | Field, NodeTraversalState>;
 
 export class ReactCompiler {
   readonly config: ICompilerConfig;
-  componentConfigsInForm: Record<string, Set<IComponentConfig>>;
+  componentConfigsInForm: Record<string, Map<string, IComponentConfig>>;
 
   constructor(config: ICompilerConfig) {
     this.config = config;
@@ -75,7 +75,7 @@ export class ReactCompiler {
   public compileModel(mode: Model) {}
 
   public generateForm(form: Form): GenerateFormOutput {
-    this.componentConfigsInForm[form.name] = new Set();
+    this.componentConfigsInForm[form.name] = new Map();
     const root = {
       node: form,
       state: {
@@ -113,18 +113,20 @@ export class ReactCompiler {
     };
   }
 
-  private findImportAliasClashes(configs: Set<IComponentConfig>) {
+  private findImportAliasClashes(configs: Map<string, IComponentConfig>) {
     const clashes = [];
-    const visitedAliases = new Map<string, IComponentConfig>();
-    for (const config of configs.values()) {
+    const visitedAliases = new Map<string, [IComponentConfig, string]>();
+    for (const [componentName, config] of configs.entries()) {
       const alias = this.getComponentAlias(config);
       if (visitedAliases.has(alias)) {
-        const existingConfig = visitedAliases.get(alias);
-        clashes.push(
-          `Error: import alias '${alias}' from config: ${JSON.stringify(config)} clashes with existing alias from config ${JSON.stringify(existingConfig)}`,
-        );
+        const [existingConfig, existingComponent] = visitedAliases.get(alias)!;
+        if (componentName !== existingComponent) {
+          clashes.push(
+            `Error: import alias '${alias}' from component '${componentName}' with config: ${JSON.stringify(config)}, clashes with existing alias from component '${existingComponent}' with config ${JSON.stringify(existingConfig)}`,
+          );
+        }
       } else {
-        visitedAliases.set(alias, config);
+        visitedAliases.set(alias, [config, componentName]);
       }
     }
     return clashes;
@@ -182,7 +184,8 @@ export class ReactCompiler {
     nodeState.state.componentConfig = this.resolveComponentConfig(
       nodeState.node,
     );
-    this.componentConfigsInForm[nodeState.state.root.name].add(
+    this.componentConfigsInForm[nodeState.state.root.name].set(
+      nodeState.node.component.componentId.ref!.name,
       nodeState.state.componentConfig,
     );
   }
