@@ -2,6 +2,11 @@ export interface ICompilerConfig {
   components: {
     [key: string]: IComponentConfig;
   };
+  stateManagementConfig?: IStateManagementConfig;
+}
+
+export interface IStateManagementConfig {
+  singleStateStore: boolean;
 }
 
 export interface IComponentImportConfig {

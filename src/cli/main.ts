@@ -81,7 +81,6 @@ export const generateReactAction = async (
 ): Promise<void> => {
   const services = createFormLangServices(NodeFileSystem).FormLang;
   const model = await extractAstNode<Model>(fileName, services);
-  const firstForm = model.forms[0];
   // TODO Load from file
   const config = {
     components: {
@@ -113,38 +112,48 @@ export const generateReactAction = async (
         importSymbolAlias: "MyNestedForm",
       },
     },
+    stateManagementConfig: {
+      singleStateStore: opts.singleStateStore,
+    },
   } satisfies ICompilerConfig;
   const reactCompiler = new ReactCompiler(config);
-  let compilerOutput, formattedComponent, formattedSliceCreator;
+  let compilerOutput;
   try {
-    compilerOutput = reactCompiler.generateForm(firstForm);
+    compilerOutput = reactCompiler.compileModel(model);
     if (compilerOutput.status === "error") {
       for (const error of compilerOutput.errors) {
         console.error(chalk.red(error));
       }
       return;
     } else {
-      formattedComponent = await formatJsSource(
-        compilerOutput.formComponentCode,
-      );
-      formattedSliceCreator = await formatJsSource(
-        compilerOutput.formSliceCreatorCode,
-      );
-      console.log(formattedComponent);
-      console.log(formattedSliceCreator);
+      for (const [formName, compileOutput] of Object.entries(
+        compilerOutput.output,
+      )) {
+        let formattedComponent, formattedSliceCreator;
+        formattedComponent = await formatJsSource(
+          compileOutput.formComponentCode,
+        );
+        formattedSliceCreator = await formatJsSource(
+          compileOutput.formSliceCreatorCode ??
+            `//No formSliceCreatorCode for form '${formName}'`,
+        );
+        console.log(formattedComponent);
+        console.log(formattedSliceCreator);
+        if (opts.validate) {
+          const jsSource = formattedComponent + "\n" + formattedSliceCreator;
+          const isValid = checkJsAst(jsSource);
+          console.log(
+            isValid
+              ? chalk.green(`Generated JSX is valid`)
+              : chalk.red("Generated JSX contains errors!"),
+          );
+        }
+      }
     }
   } catch (err) {
+    console.error(err);
     console.error(chalk.red(err));
     return;
-  }
-  if (opts.validate) {
-    const jsSource = formattedComponent + "\n" + formattedSliceCreator;
-    const isValid = checkJsAst(jsSource);
-    console.log(
-      isValid
-        ? chalk.green(`Generated JSX is valid`)
-        : chalk.red("Generated JSX contains errors!"),
-    );
   }
 };
 
@@ -168,7 +177,8 @@ export interface GenerateOptions {
 }
 
 export interface GenerateReactOptions extends GenerateOptions {
-  validate?: boolean;
+  validate: boolean;
+  singleStateStore: boolean;
 }
 
 export default function (): void {
@@ -204,7 +214,12 @@ export default function (): void {
       `source file (possible file extensions: ${fileExtensions})`,
     )
     .option("-d, --destination <dir>", "destination directory for the output")
-    .option("--validate", "whether tree sitter validation should be run")
+    .option("--validate", "whether tree sitter validation should be run", false)
+    .option(
+      "--singleStateStore",
+      "whether we should generate a single store to manage states for all forms in the file",
+      false,
+    )
     .description("")
     .action(generateReactAction);
   program.parse(process.argv);

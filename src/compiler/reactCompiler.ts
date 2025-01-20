@@ -26,30 +26,56 @@ interface NodeStateDescription {
 
 interface NodeTraversalState {
   callSiteCode: string | null;
+  componentCode: string | null;
   stateDescription: NodeStateDescription | null;
   componentConfig: IComponentConfig | null;
   root: Form;
 }
 
-type GenerateFormOutput =
-  | {
-      status: "success";
-      formComponentCode: string;
-      formSliceCreatorCode: string;
-    }
-  | { status: "error"; errors: string[] };
+interface GeneratedFormOutput {
+  status: "success";
+  formComponentCode: string;
+  formSliceCreatorCode: string | null;
+}
+
+interface CompiledFormOutput extends GeneratedFormOutput {
+  formStateCreator?: string;
+}
+
+interface CompilationErrorResult {
+  status: "error";
+  errors: string[];
+}
+
+type GenerateFormOutput = GeneratedFormOutput | CompilationErrorResult;
+
+type ModelCompilationSuccessResult = {
+  status: "success";
+  output: Record<string, CompiledFormOutput>;
+};
+
+type CompileModelOutput =
+  | ModelCompilationSuccessResult
+  | CompilationErrorResult;
 
 type FormFieldNodeState = NodeState<Form | Field, NodeTraversalState>;
 
 export class ReactCompiler {
   readonly config: ICompilerConfig;
   componentConfigsInForm: Record<string, Map<string, IComponentConfig>>;
+  formStateManagement: Map<string, Form>;
 
   constructor(config: ICompilerConfig) {
     this.config = config;
     this.componentConfigsInForm = {};
+    this.formStateManagement = new Map();
     this.compileModel = this.compileModel.bind(this);
     this.generateForm = this.generateForm.bind(this);
+    this.generateFormsStateCreatorWithImmerMiddleware =
+      this.generateFormsStateCreatorWithImmerMiddleware.bind(this);
+    this.getFormsStateCreatorName = this.getFormsStateCreatorName.bind(this);
+    this.getFormSliceCreatorName = this.getFormSliceCreatorName.bind(this);
+    this.getFormSliceId = this.getFormSliceId.bind(this);
     this.generateFormStateSliceCreator =
       this.generateFormStateSliceCreator.bind(this);
     this.generateFunctionalComponent =
@@ -62,25 +88,108 @@ export class ReactCompiler {
     this.generateFormCode = this.generateFormCode.bind(this);
     this.generateFieldStateDescription =
       this.generateFieldStateDescription.bind(this);
+    this.generateFieldStatefulComponentCode =
+      this.generateFieldStatefulComponentCode.bind(this);
     this.generateFieldCode = this.generateFieldCode.bind(this);
     this.getComponentAlias = this.getComponentAlias.bind(this);
     this.generateJsxOpenTag = this.generateJsxOpenTag.bind(this);
     this.generateJsxCloseTag = this.generateJsxCloseTag.bind(this);
     this.generateStatePropsAssignment =
       this.generateStatePropsAssignment.bind(this);
+    this.getStateSetterId = this.getStateSetterId.bind(this);
     this.getDataFormFieldId = this.getDataFormFieldId.bind(this);
     this.resolveComponentConfig = this.resolveComponentConfig.bind(this);
   }
 
-  public compileModel(mode: Model) {}
+  public compileModel(model: Model): CompileModelOutput {
+    const compilationResults: ModelCompilationSuccessResult["output"] = {};
+    const formOutputs = new Map<string, GenerateFormOutput>();
+    let hasErrors = false;
+    for (const form of model.forms) {
+      const out = this.generateForm(form);
+      formOutputs.set(form.name, out);
+    }
+    const { formOutputsForStateManagement, formOutputsWithoutStateManagement } =
+      [...formOutputs.entries()].reduce(
+        (res, item) => {
+          const formName = item[0];
+          if (this.formStateManagement.has(formName)) {
+            res.formOutputsForStateManagement.push(item);
+          } else {
+            res.formOutputsWithoutStateManagement.push(item);
+          }
+          return res;
+        },
+        {
+          formOutputsForStateManagement: [] as Array<
+            [string, GenerateFormOutput]
+          >,
+          formOutputsWithoutStateManagement: [] as Array<
+            [string, GenerateFormOutput]
+          >,
+        },
+      );
+    for (const [formName, formOutput] of formOutputsWithoutStateManagement) {
+      if (formOutput.status === "success") {
+        compilationResults[formName] = {
+          ...formOutput,
+        };
+      } else {
+        hasErrors = true;
+      }
+    }
+    if (formOutputsForStateManagement.length > 0) {
+      if (this.config.stateManagementConfig?.singleStateStore) {
+        return {
+          status: "error",
+          errors: [
+            ...[...formOutputs.values()].flatMap((formOutput) =>
+              formOutput.status === "error" ? formOutput.errors : [],
+            ),
+            "singleStateStore not yet implemented",
+          ],
+        };
+      } else {
+        for (const [formName, formOutput] of formOutputsForStateManagement) {
+          if (formOutput.status === "error") {
+            formOutput.errors.push(
+              `Error: Failed to create state creator for form '${formName}'`,
+            );
+            hasErrors = true;
+          } else {
+            const storeName = formName;
+            const formStateCreator =
+              this.generateFormsStateCreatorWithImmerMiddleware(
+                [this.formStateManagement.get(formName)!],
+                storeName,
+              );
+            compilationResults[formName] = {
+              ...formOutput,
+              formStateCreator,
+            };
+          }
+        }
+      }
+    }
 
-  public generateForm(form: Form): GenerateFormOutput {
+    return hasErrors
+      ? {
+          status: "error",
+          errors: [...formOutputs.values()].flatMap((out) =>
+            out.status === "error" ? out.errors : [],
+          ),
+        }
+      : { status: "success", output: compilationResults };
+  }
+
+  private generateForm(form: Form): GenerateFormOutput {
     this.componentConfigsInForm[form.name] = new Map();
     const root = {
       node: form,
       state: {
         componentConfig: null,
         callSiteCode: null,
+        componentCode: null,
         stateDescription: null,
         root: form,
       },
@@ -103,7 +212,10 @@ export class ReactCompiler {
         status: "error",
       };
     }
-    const formComponentCode = this.generateFunctionalComponent(root);
+    const formComponentCode = this.generateFunctionalComponent(
+      root.node.name,
+      root.state!.callSiteCode,
+    );
     const formSliceCreatorCode = this.generateFormStateSliceCreator(root);
 
     return {
@@ -132,10 +244,55 @@ export class ReactCompiler {
     return clashes;
   }
 
+  /**
+   * Generates:
+   * const use<Capitalized storeName>Store = create(
+   *  immer(
+   *    (set) => ({
+   *        // for each <sliceId>
+   *            <sliceId>: <sliceCreatorName>(set)
+   *    })
+   * ));
+   * */
+  private generateFormsStateCreatorWithImmerMiddleware(
+    forms: Array<Form>,
+    storeName: string,
+  ) {
+    const storeVariableName = this.getFormsStateCreatorName(storeName);
+    let slicesCode = "";
+    for (const form of forms) {
+      slicesCode += `\n${this.getFormSliceId(form)}: ${this.getFormSliceCreatorName(form)}(set),`;
+    }
+    const storeCreatorCode = `const ${storeVariableName} = create(immer((set) => ({${slicesCode})));`;
+
+    return storeCreatorCode;
+  }
+
+  private getFormsStateCreatorName(storeName: string): string {
+    return `use${capitalize(storeName)}Store`;
+  }
+
+  private getFormSliceCreatorName(form: Form): string {
+    return `create${capitalize(this.getFormSliceId(form))}`;
+  }
+
+  private getFormSliceId(form: Form): string {
+    return `${form.name}Slice`;
+  }
+
+  /**
+   * Generates:
+   * function <sliceCreatorName>(set) {
+   *     return {
+   *         <stateId>: <stateDefaultValue>,
+   *         <stateSetterId>: (newState) => set( (state) => ({ <stateId>: newState }) ),
+   *     };
+   * }
+   * */
   private generateFormStateSliceCreator(
     root: NodeState<Form, NodeTraversalState>,
-  ): string {
-    const sliceCreatorName = `create${capitalize(root.node.name)}Slice`;
+  ): string | null {
+    const sliceCreatorName = this.getFormSliceCreatorName(root.node);
     const sliceState = { stateCode: "" };
     traverseDFS(
       root,
@@ -145,21 +302,25 @@ export class ReactCompiler {
           const stateId = nodeState.state.stateDescription.stateId;
           const defaultValue =
             nodeState.state.stateDescription.defaultValue?.value ?? "null";
-          const setStateId = `set${capitalize(stateId)}`;
+          const stateSetterId = this.getStateSetterId(stateId);
           sliceState.stateCode += `${stateId}: ${defaultValue},\n`;
-          sliceState.stateCode += `${setStateId}: (newState) => set( (state) => ({ ${stateId}: newState }) ),\n`;
+          sliceState.stateCode += `${stateSetterId}: (newState) => set( (state) => ({ ${stateId}: newState }) ),\n`;
         }
       },
       () => {},
     );
     const sliceCreatorBody = `(set) {return {${sliceState.stateCode}};}`;
-    return `function ${sliceCreatorName}${sliceCreatorBody}`;
+    return sliceState.stateCode
+      ? `function ${sliceCreatorName}${sliceCreatorBody}`
+      : null;
   }
 
   private generateFunctionalComponent(
-    root: NodeState<Form, NodeTraversalState>,
+    componentName: string,
+    componentReturnJsxExpression: string,
+    componentRenderCode: string = "",
   ) {
-    return `function ${root.node.name}() {\nreturn (\n${root.state!.callSiteCode}\n);\n}`;
+    return `function ${componentName}() {\n${componentRenderCode}\nreturn (\n${componentReturnJsxExpression}\n);\n}`;
   }
 
   private getNodeChildren(nodeState: FormFieldNodeState) {
@@ -171,6 +332,7 @@ export class ReactCompiler {
         state: {
           componentConfig: null,
           callSiteCode: null,
+          componentCode: null,
           stateDescription: null,
           root: nodeState.state.root,
         },
@@ -188,6 +350,13 @@ export class ReactCompiler {
       nodeState.node.component.componentId.ref!.name,
       nodeState.state.componentConfig,
     );
+    const isNodeStateManaged = isField(nodeState.node) && nodeState.node.state;
+    if (isNodeStateManaged) {
+      this.formStateManagement.set(
+        nodeState.state.root.name,
+        nodeState.state.root,
+      );
+    }
   }
 
   private handleNodeExit(nodeState: FormFieldNodeState) {
@@ -208,6 +377,10 @@ export class ReactCompiler {
         node,
         nodeState.state!,
       );
+      if (nodeState.state!.stateDescription !== null) {
+        nodeState.state!.componentCode =
+          this.generateFieldStatefulComponentCode(node, nodeState.state!);
+      }
       nodeState.state!.callSiteCode = this.generateFieldCode(
         node,
         nodeState.state!,
@@ -256,6 +429,27 @@ export class ReactCompiler {
       : null;
   }
 
+  /**
+   * Generates:
+   * function Field_<capitalizedStateId>() {
+   *     const <stateId> = <useStateHook>((state) => state.<sliceId>.<stateId>);
+   *     const <stateSetterId> = <useStateHook>((state) => state.<sliceId>.<stateSetterId>);
+   *
+   *     return (<<ComponentName> <props> <state assignment>/>);
+   * }
+   * */
+  private generateFieldStatefulComponentCode(
+    field: Field,
+    state: NodeTraversalState,
+  ): string {
+    // TODO - implement
+    // const stateDescription = state.stateDescription!;
+    // const stateId = stateDescription.stateId;
+    // const stateSetterId = this.getStateSetterId(stateId);
+
+    return "";
+  }
+
   private generateFieldCode(field: Field, state: NodeTraversalState): string {
     return this.generateJsxOpenTag(field, state, true);
   }
@@ -297,11 +491,16 @@ export class ReactCompiler {
 
   private generateStatePropsAssignment(state: NodeTraversalState) {
     const containsStateDesc = Boolean(state.stateDescription);
+    const stateId = state.stateDescription?.stateId;
     const componentConfig: IComponentConfig = state.componentConfig!;
 
     return containsStateDesc
-      ? `${componentConfig.stateManagement!.valuePropName}={${state.stateDescription!.stateId}}${componentConfig.stateManagement!.valueSetterPropName}={set${capitalize(state.stateDescription!.stateId)}}`
+      ? `${componentConfig.stateManagement!.valuePropName}={${stateId}}${componentConfig.stateManagement!.valueSetterPropName}={${this.getStateSetterId(stateId!)}}`
       : "";
+  }
+
+  private getStateSetterId(stateId: string): string {
+    return `set${capitalize(stateId)}`;
   }
 
   private getDataFormFieldId(
