@@ -1,14 +1,23 @@
 import "./terminals"
 
-ComponentDef:
+interface ComponentDef {
+    name: string;
+    props: ComponentPropKey[];
+}
+
+interface ComponentPropKey {
+    key: string;
+}
+
+ComponentDef returns ComponentDef:
     'component' name=ID '{'
-        (props=ComponentDefProps)?
+        ComponentDefProps?
     '}';
 
-ComponentDefProps:
+fragment ComponentDefProps:
     'props' '{'
-        (properties+=ComponentDefPropKey)*
+        (props+=ComponentPropKey)*
     '}';
 
-ComponentDefPropKey:
+ComponentPropKey returns ComponentPropKey:
     key=ID;

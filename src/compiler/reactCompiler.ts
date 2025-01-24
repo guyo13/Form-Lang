@@ -1,6 +1,6 @@
 import type {
   BuiltInType,
-  ComponentDefPropKey,
+  ComponentPropKey,
   Field,
   FieldComponentDef,
   Form,
@@ -471,12 +471,12 @@ export class ReactCompiler {
     const componentProps = zip(
       formOrField.component.componentPropsKeys,
       formOrField.component.componentPropsValues,
-    ) as [ComponentDefPropKey, ValueExpression][];
+    ) as [ComponentPropKey, ValueExpression][];
 
     return `<${componentAlias}${componentProps
       .map(
-        ([key, val]) =>
-          `\n${key.key}={${val.isExpression ? val.value : `"${val.value}"`}}`,
+        ([propKey, propVal]) =>
+          `\n${propKey.key}={${propVal.isExpression ? propVal.value : `"${propVal.value}"`}}`,
       )
       .join(
         " ",

@@ -44,7 +44,7 @@ export class FormLangValidator {
       "name",
       accept,
       ({ propertyValue }) =>
-        `Form names should be unique. Form '${propertyValue}' already defined.`
+        `Form names should be unique. Form '${propertyValue}' already defined.`,
     );
   }
 
@@ -54,7 +54,7 @@ export class FormLangValidator {
       "name",
       accept,
       ({ propertyValue }) =>
-        `Component names should be unique. Component '${propertyValue}' already defined.`
+        `Component names should be unique. Component '${propertyValue}' already defined.`,
     );
   }
 
@@ -64,7 +64,7 @@ export class FormLangValidator {
       "name",
       accept,
       ({ propertyValue }) =>
-        `TypeDef names should be unique. TypeDef '${propertyValue}' already defined.`
+        `TypeDef names should be unique. TypeDef '${propertyValue}' already defined.`,
     );
   }
 
@@ -78,7 +78,7 @@ export class FormLangValidator {
       "name",
       accept,
       ({ propertyValue }) =>
-        `Nested form names should be unique within the form. Nested form '${propertyValue}' already defined.`
+        `Nested form names should be unique within the form. Nested form '${propertyValue}' already defined.`,
     );
   }
 
@@ -88,18 +88,18 @@ export class FormLangValidator {
 
   validateFieldComponentDef(
     fieldComponentDef: FieldComponentDef,
-    accept: ValidationAcceptor
+    accept: ValidationAcceptor,
   ): void {
     for (const propKey of fieldComponentDef.componentPropsKeys) {
       if (
-        !fieldComponentDef.componentId.ref?.props?.properties?.find(
-          (prop) => prop.key === propKey.key
+        !fieldComponentDef.componentId.ref?.props?.find(
+          (prop) => prop.key === propKey.key,
         )
       ) {
         accept(
           "error",
           `Property '${propKey.key}' is not defined in the component '${fieldComponentDef.componentId.ref?.name}'`,
-          { node: propKey, property: "key" }
+          { node: propKey, property: "key" },
         );
       }
     }
@@ -107,15 +107,15 @@ export class FormLangValidator {
 
   validateComponentDef(
     componentDef: ComponentDef,
-    accept: ValidationAcceptor
+    accept: ValidationAcceptor,
   ): void {
     componentDef.props &&
       uniquePropertyValidator(
-        componentDef.props.properties,
+        componentDef.props,
         "key",
         accept,
         ({ propertyValue }) =>
-          `ComponentDef property names should be unique. Property '${propertyValue}' already defined.`
+          `ComponentDef property names should be unique. Property '${propertyValue}' already defined.`,
       );
   }
 }
