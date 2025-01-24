@@ -14,6 +14,9 @@ importers:
       '@codingame/monaco-vscode-keybindings-service-override':
         specifier: ~3.2.3
         version: 3.2.3
+      '@faker-js/faker':
+        specifier: ^9.4.0
+        version: 9.4.0
       '@guyo13/langium-utils':
         specifier: ^1.0.1
         version: 1.0.1
@@ -374,6 +377,10 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@faker-js/faker@9.4.0':
+    resolution: {integrity: sha512-85+k0AxaZSTowL0gXp8zYWDIrWclTbRPg/pm/V0dSFZ6W6D4lhcG3uuZl4zLsEKfEvs69xDbLN2cHQudwp95JA==}
+    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   '@guyo13/langium-utils@1.0.1':
     resolution: {integrity: sha512-3FFB/gfk3tWCzpcg08Bnoaw22s8pk4nGq+6CCpb9TanA6yQzsIIZ07vTy2hmDipQ8HN34DOAMWDIYOX/Mof6Bw==}
@@ -2463,6 +2470,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.57.1': {}
+
+  '@faker-js/faker@9.4.0': {}
 
   '@guyo13/langium-utils@1.0.1': {}
 

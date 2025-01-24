@@ -48,21 +48,26 @@ def StateCreator(Form):
 ### Data generation
 Constraints:
 
-* Generate only a single top-level form
-* Works with a static set of pre-defined component defs
+* Generate only a single top-level form.
+* Works with a static set of pre-defined component defs.
+* Requires a set of hyperparameters.
 
 Algorithm:
 
-* Run a DFS-like algorithm, start with an empty form definition.
+* Iterate Depth-First, start with an empty form definition.
 * For each item off the frontier if the item is a Field, append it to its Parent Form.
-* If the item is a Form, get its children:
-  * There is a probability of $\alpha^{d}$ of generating a random child Form where $0 \leq \alpha < 1$ and $d$ is the depth of the Field.
-  * There is an optional parameter $D$ for defining the maximum depth for nested forms, which sets to $0$ the probability to generate a nested Form if its depth will be $D$. 
-  * There is a probability of $1 - \alpha^{d}$ of generating a random child Field.
-  * The number of generated children is a random number in the range of $[a, b]$.
-  * There is a probability of $\beta$ that a generated Field will contain a `state`.
-    * There is a probability of $\gamma$ that a state definition will be an `array`.
-      * The number of array elements will be chosen at random from the integer interval $[amin, amax]$. 
-    * There is an equal probability of the state `type` to be any of the supported built-in types.
-    * There is a probability of $\delta$ that a state definition will contain a `default` value.
-      * If the `type` is `string` there is an $\epsilon$ probability of the default value to be defined as `as expression`, otherwise the probability is $1$.
+* If the item is a Form, get its children and add them onto the frontier:
+    * Assign $depth = parentDepth + 1$.
+    * There is a probability of $\alpha^{d}$ of generating a random child Form where $0 \leq \alpha < 1$ and $d$ is the depth of the Field.
+    * There is an optional parameter $D$ for defining the maximum depth for nested forms, which sets to $0$ the probability to generate a nested Form if its depth will be $D$. 
+    * There is a probability of $1 - \alpha^{d}$ of generating a random child Field.
+    * The number of generated children is a random number in the range of $[minChildren, maxChildren]$.
+    * There is a probability of $\beta$ that a generated Field will contain a `state`.
+      * There is a probability of $\gamma$ that a state definition will be an `array`.
+        * The number of array elements will be chosen at random from the integer interval $[amin, amax]$. 
+      * There is an equal probability of the state `type` to be any of the supported built-in types.
+      * There is a probability of $\delta$ that a state definition will contain a `default` value.
+        * If the `type` is `string` there is an $\epsilon$ probability of the default value to be defined as `as expression`, otherwise the probability is $1$.
+* For each item off the frontier chose a random component from a set of available components.
+  * Choose at random the number of assigned component props from the range $[0, ComponentPropCount]$.
+    * For each assigned prop generate a random value with $\epsilon$ probability of the value to be defined as `as expression`
