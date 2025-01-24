@@ -9,7 +9,8 @@ import type {
 } from "../language/generated/ast.js";
 import type { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 import { isField, isForm, isModel } from "../language/generated/ast.js";
-import { capitalize, traverseDFS, uncapitalize, zip } from "./compilerUtil.js";
+import { capitalize, uncapitalize, zip } from "./compilerUtil.js";
+import { traverseDFS } from "../util/traversal.js";
 
 interface NodeState<N, S> {
   node: N;
