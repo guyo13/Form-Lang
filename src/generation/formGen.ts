@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Faker } from "@faker-js/faker";
-import type { ComponentDef } from "../language/generated/ast.js";
+import type { BuiltInType, ComponentDef } from "../language/generated/ast.js";
 import { traverseDFS } from "../util/traversal.js";
 import { RANDOM_JS_EXPRESSIONS } from "./data.js";
 
@@ -42,10 +42,40 @@ export interface ProbabilisticSearchParams {
 }
 
 type Component = ComponentDef;
+
 interface RandomValueExpression {
   expr: string;
   isAsExpression: boolean;
 }
+
+interface IFieldComponent {
+  component: Component;
+  propAssignments: Record<string, RandomValueExpression>;
+}
+
+interface IForm {
+  readonly $type: "Form";
+  name: string;
+  component: IFieldComponent;
+  children: Array<IFormChild> | null;
+  depth: number;
+}
+
+interface IFieldState {
+  type: BuiltInType;
+  isArray: boolean;
+  defaultValue: RandomValueExpression | null;
+}
+
+interface IField {
+  readonly $type: "Field";
+  name: string;
+  component: IFieldComponent;
+  state: IFieldState | null;
+  depth: number;
+}
+
+type IFormChild = IForm | IField;
 
 export default class ProbabilisticSearchFormGenerator {
   readonly params: ProbabilisticSearchParams;
@@ -65,8 +95,11 @@ export default class ProbabilisticSearchFormGenerator {
     this.availableFormComponentIds = availableFormComponentIds;
     this.availableFieldComponentIds = availableFieldComponentIds;
     this.ids = new Set();
+    this.generateForm = this.generateForm.bind(this);
     this.randomForm = this.randomForm.bind(this);
+    this.randomField = this.randomField.bind(this);
     this.getChildren = this.getChildren.bind(this);
+    this.randomChildren = this.randomChildren.bind(this);
     this.onEntry = this.onEntry.bind(this);
     this.onExit = this.onExit.bind(this);
     this.toFormLang = this.toFormLang.bind(this);
@@ -78,30 +111,60 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomComponent = this.randomComponent.bind(this);
     this.randomValueExpression = this.randomValueExpression.bind(this);
     this.randomJsExpression = this.randomJsExpression.bind(this);
+    this.randomFieldState = this.randomFieldState.bind(this);
   }
 
-  public randomForm() {
-    const root = {
-      name: this.randomFormId(),
-      component: this.randomFormComponent(),
-      children: [],
-      depth: 0,
-    };
+  public generateForm() {
+    const initialDepth = 0;
+    const root = this.randomForm(initialDepth);
     traverseDFS(root, this.getChildren, this.onEntry, this.onExit);
 
     return this.toFormLang(root);
   }
 
-  // TODO -implement
-  private getChildren(node: any) {
-    return node.children;
+  private randomForm(depth: number): IForm {
+    return {
+      $type: "Form",
+      name: this.randomFormId(),
+      component: this.randomFormComponent(),
+      children: [],
+      depth,
+    };
   }
+
+  private randomField(depth: number): IField {
+    return {
+      $type: "Field",
+      name: this.randomFormId(),
+      component: this.randomFormComponent(),
+      state: this.randomFieldState(),
+      depth,
+    };
+  }
+
+  private getChildren(node: IFormChild) {
+    const isForm = node.$type === "Form";
+    if (isForm) {
+      if (!node.children) {
+        node.children = this.randomChildren(node);
+      }
+      return node.children;
+    } else {
+      return [];
+    }
+  }
+
+  private randomChildren(form: IForm): Array<IFormChild> {
+    // TODO
+    return [];
+  }
+
   // TODO -implement
-  private onEntry(node: any) {}
+  private onEntry(node: IFormChild) {}
   // TODO -implement
-  private onExit(node: any) {}
+  private onExit(node: IFormChild) {}
   // TODO -implement
-  private toFormLang(node: any): string {
+  private toFormLang(form: IForm): string {
     return "";
   }
 
@@ -133,18 +196,15 @@ export default class ProbabilisticSearchFormGenerator {
     return id;
   }
 
-  private randomFieldComponent() {
+  private randomFieldComponent(): IFieldComponent {
     return this.randomComponent(this.availableFieldComponentIds);
   }
 
-  private randomFormComponent() {
+  private randomFormComponent(): IFieldComponent {
     return this.randomComponent(this.availableFormComponentIds);
   }
 
-  private randomComponent(components: Array<Component>): {
-    component: Component;
-    propAssignments: Record<string, RandomValueExpression>;
-  } {
+  private randomComponent(components: Array<Component>): IFieldComponent {
     const component = this.faker.helpers.arrayElement(components);
     const propAssignments: Record<string, RandomValueExpression> = {};
     const propKeys = this.faker.helpers.arrayElements(component.props, {
@@ -181,5 +241,10 @@ export default class ProbabilisticSearchFormGenerator {
     return fromPreGeneratedList
       ? this.faker.helpers.arrayElement(RANDOM_JS_EXPRESSIONS)
       : `(() => ${this.faker.number.float(100)})()`;
+  }
+
+  private randomFieldState(): IFieldState | null {
+    // TODO Implement
+    return null;
   }
 }
