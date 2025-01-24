@@ -18,7 +18,7 @@ interface NodeState<N, S> {
   children?: Array<NodeState<N, S>>;
 }
 
-interface NodeStateDescription {
+interface StateDescription {
   type: BuiltInType;
   isArray: boolean;
   defaultValue: ValueExpression | undefined;
@@ -28,7 +28,7 @@ interface NodeStateDescription {
 interface NodeTraversalState {
   callSiteCode: string | null;
   componentCode: string | null;
-  stateDescription: NodeStateDescription | null;
+  stateDescription: StateDescription | null;
   componentConfig: IComponentConfig | null;
   root: Form;
 }
