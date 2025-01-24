@@ -53,9 +53,16 @@ Constraints:
 
 Algorithm:
 
-* Run a DFS-like algorithm, start with a randomly generated form definition.
+* Run a DFS-like algorithm, start with an empty form definition.
 * For each item off the frontier if the item is a Field, append it to its Parent Form.
-* If the item is a Field, get its children:
+* If the item is a Form, get its children:
   * There is a probability of $\alpha^{d}$ of generating a random child Form where $0 \leq \alpha < 1$ and $d$ is the depth of the Field.
+  * There is an optional parameter $D$ for defining the maximum depth for nested forms, which sets to $0$ the probability to generate a nested Form if its depth will be $D$. 
   * There is a probability of $1 - \alpha^{d}$ of generating a random child Field.
   * The number of generated children is a random number in the range of $[a, b]$.
+  * There is a probability of $\beta$ that a generated Field will contain a `state`.
+    * There is a probability of $\gamma$ that a state definition will be an `array`.
+      * The number of array elements will be chosen at random from the integer interval $[amin, amax]$. 
+    * There is an equal probability of the state `type` to be any of the supported built-in types.
+    * There is a probability of $\delta$ that a state definition will contain a `default` value.
+      * If the `type` is `string` there is an $\epsilon$ probability of the default value to be defined as `as expression`, otherwise the probability is $1$.
