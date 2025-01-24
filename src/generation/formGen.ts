@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Faker } from "@faker-js/faker";
 import type { ComponentDef } from "../language/generated/ast.js";
 import { traverseDFS } from "../util/traversal.js";
+import { RANDOM_JS_EXPRESSIONS } from "./data.js";
 
 const probabilitySchema = z.number().min(0).lt(1);
 const integerSchema = z.number().min(0).int();
@@ -41,6 +42,10 @@ export interface ProbabilisticSearchParams {
 }
 
 type Component = ComponentDef;
+interface RandomValueExpression {
+  expr: string;
+  isAsExpression: boolean;
+}
 
 export default class ProbabilisticSearchFormGenerator {
   readonly params: ProbabilisticSearchParams;
@@ -71,6 +76,8 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomFormComponent = this.randomFormComponent.bind(this);
     this.randomFieldComponent = this.randomFieldComponent.bind(this);
     this.randomComponent = this.randomComponent.bind(this);
+    this.randomValueExpression = this.randomValueExpression.bind(this);
+    this.randomJsExpression = this.randomJsExpression.bind(this);
   }
 
   public randomForm() {
@@ -126,15 +133,53 @@ export default class ProbabilisticSearchFormGenerator {
     return id;
   }
 
-  private randomFieldComponent(): Component {
+  private randomFieldComponent() {
     return this.randomComponent(this.availableFieldComponentIds);
   }
 
-  private randomFormComponent(): Component {
+  private randomFormComponent() {
     return this.randomComponent(this.availableFormComponentIds);
   }
 
-  private randomComponent(components: Array<Component>): Component {
-    return this.faker.helpers.arrayElement(components);
+  private randomComponent(components: Array<Component>): {
+    component: Component;
+    propAssignments: Record<string, RandomValueExpression>;
+  } {
+    const component = this.faker.helpers.arrayElement(components);
+    const propAssignments: Record<string, RandomValueExpression> = {};
+    const propKeys = this.faker.helpers.arrayElements(component.props, {
+      min: 0,
+      max: component.props.length,
+    });
+    for (const propKey of propKeys) {
+      propAssignments[propKey.key] = this.randomValueExpression();
+    }
+
+    return {
+      component,
+      propAssignments,
+    };
+  }
+
+  private randomValueExpression(): RandomValueExpression {
+    const isAsExpression = this.faker.datatype.boolean({
+      probability: this.params.epsilon,
+    });
+
+    return {
+      expr: isAsExpression
+        ? this.randomJsExpression() // TODO Support more languages
+        : this.faker.internet.color(), // TODO - Randomize the categories and properties of values
+      isAsExpression,
+    };
+  }
+
+  private randomJsExpression() {
+    // TODO - support more types of expressions
+    const fromPreGeneratedList = this.faker.datatype.boolean();
+
+    return fromPreGeneratedList
+      ? this.faker.helpers.arrayElement(RANDOM_JS_EXPRESSIONS)
+      : `(() => ${this.faker.number.float(100)})()`;
   }
 }
