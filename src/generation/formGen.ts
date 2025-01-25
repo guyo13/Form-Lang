@@ -305,7 +305,7 @@ export default class ProbabilisticSearchFormGenerator {
   private randomId(min: number, max: number): string {
     let id = undefined;
     while (id === undefined || this.ids.has(id)) {
-      id = this.faker.helpers.fromRegExp(/[_a-zA-Z][\w_]*/);
+      id = this.faker.helpers.fromRegExp(/[_a-zA-Z][\w_]*/).slice(0, 50);
     }
     this.ids.add(id);
 
