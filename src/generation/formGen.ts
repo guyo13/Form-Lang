@@ -155,8 +155,25 @@ export default class ProbabilisticSearchFormGenerator {
   }
 
   private randomChildren(form: IForm): Array<IFormChild> {
-    // TODO
-    return [];
+    const numChildren = this.faker.number.int({
+      min: this.params.minChildren!,
+      max: this.params.maxChildren!,
+    });
+    const children: Array<IFormChild> = Array(numChildren);
+    const depth = form.depth + 1;
+    const isMaxDepthReached = this.params.D && this.params.D === depth;
+    const formProbability = isMaxDepthReached
+      ? 0
+      : Math.pow(this.params.alpha, depth);
+
+    for (let i = 0; i < numChildren; i++) {
+      const isForm = this.faker.datatype.boolean({
+        probability: formProbability,
+      });
+      children[i] = isForm ? this.randomForm(depth) : this.randomField(depth);
+    }
+
+    return children;
   }
 
   // TODO -implement
