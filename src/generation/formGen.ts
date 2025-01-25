@@ -319,7 +319,7 @@ export default class ProbabilisticSearchFormGenerator {
       const defaultValue = state.defaultValue;
       const stateTypeCode = `${state.type}${state.isArray ? "[]" : ""}`;
       const stateDefaultValueCode = defaultValue
-        ? ` default ${this.formatExpression(defaultValue, state.isArray)}`
+        ? ` default ${this.formatExpression(defaultValue)}`
         : "";
       stateDefCode = `state ${stateTypeCode}${stateDefaultValueCode}\n`;
     }
@@ -348,14 +348,8 @@ export default class ProbabilisticSearchFormGenerator {
     return `${openingFormCode}\n${formComponentDef}\n${fieldsCode}\n${closingBrace}\n`;
   }
 
-  private formatExpression(
-    expression: RandomValueExpression,
-    isArray: boolean,
-  ) {
-    const shouldEscape = !isArray;
-    const formattedExprString = shouldEscape
-      ? this.escapeString(expression.expr)
-      : expression.expr;
+  private formatExpression(expression: RandomValueExpression) {
+    const formattedExprString = this.escapeString(expression.expr);
 
     return `"${formattedExprString}"${expression.isAsExpression ? " as expression" : ""}`;
   }
@@ -364,7 +358,7 @@ export default class ProbabilisticSearchFormGenerator {
     propName: string,
     propValue: RandomValueExpression,
   ): string {
-    return `${propName}=${this.formatExpression(propValue, false)}`;
+    return `${propName}=${this.formatExpression(propValue)}`;
   }
 
   private formatFieldComponentDef(component: IFieldComponent): string {
