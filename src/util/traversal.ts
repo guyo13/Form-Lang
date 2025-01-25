@@ -1,8 +1,8 @@
 export function traverseDFS<T>(
   rootNode: T,
   getChildren: (node: T) => T[],
-  onEntry: (node: T, time: number) => void,
-  onExit: (node: T, time: number) => void,
+  onEntry?: (node: T, time: number) => void,
+  onExit?: (node: T, time: number) => void,
 ): void {
   const visited = new Set<T>();
   let time = 0;
@@ -15,7 +15,7 @@ export function traverseDFS<T>(
     if (!visited.has(node)) {
       visited.add(node);
       time++;
-      onEntry(node, time);
+      onEntry?.(node, time);
 
       // Get children of the node
       const children = getChildren(node);
@@ -29,7 +29,13 @@ export function traverseDFS<T>(
     } else {
       stack.pop();
       time++;
-      onExit(node, time);
+      onExit?.(node, time);
     }
   }
+}
+
+export interface NodeState<N, S> {
+  node: N;
+  state: S;
+  children?: Array<NodeState<N, S>>;
 }

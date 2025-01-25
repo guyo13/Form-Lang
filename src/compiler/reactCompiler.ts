@@ -7,16 +7,10 @@ import type {
   Model,
   ValueExpression,
 } from "../language/generated/ast.js";
-import type { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 import { isField, isForm, isModel } from "../language/generated/ast.js";
+import type { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 import { capitalize, uncapitalize, zip } from "./compilerUtil.js";
-import { traverseDFS } from "../util/traversal.js";
-
-interface NodeState<N, S> {
-  node: N;
-  state: S;
-  children?: Array<NodeState<N, S>>;
-}
+import { NodeState, traverseDFS } from "../util/traversal.js";
 
 interface StateDescription {
   type: BuiltInType;
