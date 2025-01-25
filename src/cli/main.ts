@@ -216,7 +216,17 @@ export const generateDataAction = async (
   );
   try {
     const form = formGen.generateForm();
-    console.log(formGen.toFormLang(form));
+    const serializedForm = formGen.toFormLang(form);
+    const { removedNode, removedNodeContext } = formGen.removeRandomNode(form);
+    const serializedModifiedForm = formGen.toFormLang(form);
+    console.log("// serializedForm");
+    console.log(serializedForm);
+    console.log("// serializedModifiedForm");
+    console.log(serializedModifiedForm);
+    console.log("// removedNode");
+    console.dir(removedNode);
+    console.log("// removedNodeContext");
+    console.dir(removedNodeContext);
   } catch (err) {
     console.error(err);
     console.error(chalk.red(err));

@@ -13,6 +13,7 @@ const probabilisticSearchParamsSchema = z.object({
   gamma: probabilitySchema.optional().default(0),
   delta: probabilitySchema.optional().default(0),
   epsilon: probabilitySchema.optional().default(0),
+  zeta: probabilitySchema.optional().default(0.9),
   D: integerSchema.optional(),
   minChildren: integerSchema.optional().default(0),
   maxChildren: integerSchema.min(1).default(2),
@@ -30,6 +31,7 @@ export interface ProbabilisticSearchParams {
   gamma?: number;
   delta?: number;
   epsilon?: number;
+  zeta?: number; // The base probability to retain a node
   D?: number;
   minChildren?: number;
   maxChildren?: number;
@@ -84,6 +86,13 @@ type FormLangNodeState = NodeState<
   }
 >;
 
+type RemoveNodeAlgorithmNodeState = NodeState<
+  IFormChild,
+  {
+    parent: RemoveNodeAlgorithmNodeState | null;
+  }
+>;
+
 export default class ProbabilisticSearchFormGenerator {
   readonly params: ProbabilisticSearchParams;
   readonly faker: Faker;
@@ -110,6 +119,7 @@ export default class ProbabilisticSearchFormGenerator {
     this.getChildren = this.getChildren.bind(this);
     this.randomChildren = this.randomChildren.bind(this);
     this.toFormLang = this.toFormLang.bind(this);
+    this.removeRandomNode = this.removeRandomNode.bind(this);
     this.formatField = this.formatField.bind(this);
     this.formatForm = this.formatForm.bind(this);
     this.formatExpression = this.formatExpression.bind(this);
@@ -176,6 +186,75 @@ export default class ProbabilisticSearchFormGenerator {
     );
 
     return root.state.code;
+  }
+
+  public removeRandomNode(form: IForm) {
+    const root = { node: form, state: { parent: null } };
+    let isRemoved = false;
+    let removedNode: RemoveNodeAlgorithmNodeState | null = null;
+    let removedNodeContext;
+    while (!isRemoved) {
+      traverseDFS<RemoveNodeAlgorithmNodeState>(
+        root,
+        (nodeState) => {
+          if (!nodeState.children) {
+            nodeState.children = this.getChildren(nodeState.node).map(
+              (childNode) => ({
+                node: childNode,
+                state: {
+                  parent: nodeState,
+                },
+              }),
+            );
+          }
+          return nodeState.children;
+        },
+        () => {},
+        (nodeState) => {
+          if (isRemoved) {
+            return;
+          }
+          const removalProbability =
+            1 - Math.pow(this.params.zeta!, nodeState.node.depth);
+          const shouldRemove = this.faker.datatype.boolean({
+            probability: removalProbability,
+          });
+          if (shouldRemove) {
+            isRemoved = true;
+            removedNode = nodeState;
+            const removedNodeParent = nodeState.state.parent?.node;
+            // Should always be true if there is a parent - mainly for TS sanity
+            const isParentForm = removedNodeParent?.$type === "Form";
+            const removedNodeChildIndex = isParentForm
+              ? removedNodeParent.children!.indexOf(nodeState.node)
+              : -1;
+            let removedNodeBeforeNode: IFormChild | null = null;
+            let removedNodeAfterNode: IFormChild | null = null;
+            if (isParentForm) {
+              removedNodeBeforeNode =
+                removedNodeChildIndex > 0
+                  ? removedNodeParent.children![removedNodeChildIndex - 1]
+                  : null;
+              removedNodeAfterNode =
+                removedNodeChildIndex < removedNodeParent.children!.length - 1
+                  ? removedNodeParent.children![removedNodeChildIndex + 1]
+                  : null;
+
+              removedNodeParent.children = removedNodeParent.children!.filter(
+                (child) => child !== nodeState.node,
+              );
+            }
+            removedNodeContext = {
+              parent: removedNodeParent,
+              before: removedNodeBeforeNode,
+              after: removedNodeAfterNode,
+            };
+          }
+        },
+      );
+    }
+
+    return { removedNode, removedNodeContext };
   }
 
   private randomForm(depth: number): IForm {
