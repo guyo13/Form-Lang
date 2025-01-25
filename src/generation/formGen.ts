@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Faker } from "@faker-js/faker";
 import type { BuiltInType, ComponentDef } from "../language/generated/ast.js";
-import { traverseDFS } from "../util/traversal.js";
+import { NodeState, traverseDFS } from "../util/traversal.js";
 import { RANDOM_JS_EXPRESSIONS } from "./data.js";
 
 const probabilitySchema = z.number().min(0).lt(1);
@@ -77,6 +77,13 @@ interface IField {
 
 type IFormChild = IForm | IField;
 
+type FormLangNodeState = NodeState<
+  IFormChild,
+  {
+    code: string;
+  }
+>;
+
 export default class ProbabilisticSearchFormGenerator {
   readonly params: ProbabilisticSearchParams;
   readonly faker: Faker;
@@ -102,9 +109,12 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomField = this.randomField.bind(this);
     this.getChildren = this.getChildren.bind(this);
     this.randomChildren = this.randomChildren.bind(this);
-    this.onEntry = this.onEntry.bind(this);
-    this.onExit = this.onExit.bind(this);
     this.toFormLang = this.toFormLang.bind(this);
+    this.formatField = this.formatField.bind(this);
+    this.formatForm = this.formatForm.bind(this);
+    this.formatExpression = this.formatExpression.bind(this);
+    this.formatPropAssignment = this.formatPropAssignment.bind(this);
+    this.formatFieldComponentDef = this.formatFieldComponentDef.bind(this);
     this.randomFormId = this.randomFormId.bind(this);
     this.randomFieldId = this.randomFieldId.bind(this);
     this.randomId = this.randomId.bind(this);
@@ -117,16 +127,15 @@ export default class ProbabilisticSearchFormGenerator {
     this.parameterizedRandomJsExpression =
       this.parameterizedRandomJsExpression.bind(this);
     this.randomFieldState = this.randomFieldState.bind(this);
+    this.indentLines = this.indentLines.bind(this);
     console.dir(this.params);
   }
 
   public generateForm() {
     const initialDepth = 0;
     const root = this.randomForm(initialDepth);
-    traverseDFS(root, this.getChildren, this.onEntry, this.onExit);
+    traverseDFS(root, this.getChildren);
 
-    // TODO - DELETEME
-    console.dir(root);
     return this.toFormLang(root);
   }
 
@@ -144,7 +153,7 @@ export default class ProbabilisticSearchFormGenerator {
     return {
       $type: "Field",
       name: this.randomFieldId(),
-      component: this.randomFormComponent(),
+      component: this.randomFieldComponent(),
       state: this.randomFieldState(),
       depth,
     };
@@ -184,13 +193,97 @@ export default class ProbabilisticSearchFormGenerator {
     return children;
   }
 
-  // TODO -implement
-  private onEntry(node: IFormChild) {}
-  // TODO -implement
-  private onExit(node: IFormChild) {}
-  // TODO -implement
   private toFormLang(form: IForm): string {
-    return "";
+    const root = {
+      node: form,
+      state: {
+        code: "",
+      },
+    };
+    traverseDFS<FormLangNodeState>(
+      root,
+      (nodeState) => {
+        if (!nodeState.children) {
+          nodeState.children = this.getChildren(nodeState.node).map(
+            (childNode) => ({
+              node: childNode,
+              state: {
+                code: "",
+              },
+            }),
+          );
+        }
+        return nodeState.children;
+      },
+      () => {},
+      (nodeState) => {
+        if (nodeState.node.$type === "Form") {
+          nodeState.state.code = this.formatForm(
+            nodeState.node,
+            nodeState.children!.map((child) => child.state.code),
+          );
+        } else if (nodeState.node.$type === "Field") {
+          nodeState.state.code = this.formatField(nodeState.node);
+        }
+      },
+    );
+
+    return root.state.code;
+  }
+
+  private formatField(field: IField): string {
+    let stateDefCode = "";
+    if (field.state) {
+      const state = field.state;
+      const defaultValue = state.defaultValue;
+      const stateTypeCode = `${state.type}${state.isArray ? "[]" : ""}`;
+      const stateDefaultValueCode = defaultValue
+        ? ` default ${this.formatExpression(defaultValue)}`
+        : "";
+      stateDefCode = `state ${stateTypeCode}${stateDefaultValueCode}\n`;
+    }
+    const componentCode = this.formatFieldComponentDef(field.component);
+    const fieldBody = this.indentLines(
+      `${stateDefCode}${componentCode}`,
+      field.depth + 1,
+    );
+
+    return this.indentLines(
+      `field ${field.name} {\n${fieldBody}\n}`,
+      field.depth,
+    );
+  }
+
+  private formatForm(form: IForm, fieldsCodes: Array<string>): string {
+    const openingFormCode = this.indentLines(`form ${form.name} {`, form.depth);
+    const formComponentDef = this.indentLines(
+      this.formatFieldComponentDef(form.component),
+      form.depth + 1,
+    );
+    const fieldsCode = fieldsCodes.join("\n");
+    const closingBrace = this.indentLines("}", form.depth);
+    return `${openingFormCode}\n${formComponentDef}\n${fieldsCode}\n${closingBrace}\n`;
+  }
+
+  private formatExpression(expression: RandomValueExpression) {
+    return `"${expression.expr}"${expression.isAsExpression ? " as expression" : ""}`;
+  }
+
+  private formatPropAssignment(
+    propName: string,
+    propValue: RandomValueExpression,
+  ): string {
+    return `${propName}=${this.formatExpression(propValue)}`;
+  }
+
+  private formatFieldComponentDef(component: IFieldComponent): string {
+    const propAssignmentsCode = Object.entries(component.propAssignments)
+      .map(([propName, propValue]) =>
+        this.formatPropAssignment(propName, propValue),
+      )
+      .join(" ");
+
+    return `comp ${component.component.name} ${propAssignmentsCode}\n`;
   }
 
   private randomFormId(): string {
@@ -350,5 +443,15 @@ export default class ProbabilisticSearchFormGenerator {
     } else {
       return null;
     }
+  }
+
+  private indentLines(code: string, level: number): string {
+    const indentation = "\t".repeat(level);
+
+    return code
+      .replace(/(\r\n|\r|\n)/g, "\n")
+      .split("\n")
+      .map((line) => `${indentation}${line}`)
+      .join("\n");
   }
 }
