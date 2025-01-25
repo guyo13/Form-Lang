@@ -128,6 +128,7 @@ export default class ProbabilisticSearchFormGenerator {
       this.parameterizedRandomJsExpression.bind(this);
     this.randomFieldState = this.randomFieldState.bind(this);
     this.indentLines = this.indentLines.bind(this);
+    this.escapeString = this.escapeString.bind(this);
     console.dir(this.params);
   }
 
@@ -266,7 +267,7 @@ export default class ProbabilisticSearchFormGenerator {
   }
 
   private formatExpression(expression: RandomValueExpression) {
-    return `"${expression.expr}"${expression.isAsExpression ? " as expression" : ""}`;
+    return `"${this.escapeString(expression.expr)}"${expression.isAsExpression ? " as expression" : ""}`;
   }
 
   private formatPropAssignment(
@@ -452,5 +453,13 @@ export default class ProbabilisticSearchFormGenerator {
       .split("\n")
       .map((line) => `${indentation}${line}`)
       .join("\n");
+  }
+
+  private escapeString(str: string): string {
+    return str
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\t/g, "\\t")
+      .replace(/\n/g, "\\n");
   }
 }
