@@ -71,3 +71,21 @@ Algorithm:
 * For each item off the frontier chose a random component from a set of available components.
   * Choose at random the number of assigned component props from the range $[0, ComponentPropCount]$.
     * For each assigned prop generate a random value with $\epsilon$ probability of the value to be defined as `as expression`
+
+#### TODO - data generation
+* Create an algorithm to randomly remove a node from the Form tree - recording the Parent and which child nodes came Before and After it if any.
+* Create a formatter that formats the node in plain English.
+* Create a function that generates a Training example:
+  * Generate a random Form - $F$.
+  * Serialize the Form to FormLang code - $s(F)$.
+  * Randomly remove a child node, recording its surrounding context - $F \to (F', N, ctx(F, N))$.
+  * Serialize the modified Form to FormLang code - $s(F')$. 
+  * Generate a Prompt:
+    * Serialize the removed child node into plain English - $eng(N)$.
+    * Serialize the Parent, Before and After nodes' ids and node types (form/field) into plain English - $eng(ctx(F, N))$.
+    * Create a Prompt consisting of the instruction to complete the given FormLang code, including the masked formlang code $s(F')$ and the generation instructions consisting of $eng(N), eng(ctx(F, N))$ as context - $P(F, F')$.
+    * Output a dict consisting of $s(F), s(F'), P(F, F'), eng(N), eng(ctx(F, N))$
+  * The function should allow accepting the configuration for the form generator - providing a default if not specified. 
+* Export the function from the FormLang package and build it as an entrypoint.
+* Create a Jupyter notebook with PythonMonkey and import the function and run it.
+* Create an algorithm to generate `component` definitions.

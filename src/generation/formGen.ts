@@ -137,7 +137,45 @@ export default class ProbabilisticSearchFormGenerator {
     const root = this.randomForm(initialDepth);
     traverseDFS(root, this.getChildren);
 
-    return this.toFormLang(root);
+    return root;
+  }
+
+  public toFormLang(form: IForm): string {
+    const root = {
+      node: form,
+      state: {
+        code: "",
+      },
+    };
+    traverseDFS<FormLangNodeState>(
+      root,
+      (nodeState) => {
+        if (!nodeState.children) {
+          nodeState.children = this.getChildren(nodeState.node).map(
+            (childNode) => ({
+              node: childNode,
+              state: {
+                code: "",
+              },
+            }),
+          );
+        }
+        return nodeState.children;
+      },
+      () => {},
+      (nodeState) => {
+        if (nodeState.node.$type === "Form") {
+          nodeState.state.code = this.formatForm(
+            nodeState.node,
+            nodeState.children!.map((child) => child.state.code),
+          );
+        } else if (nodeState.node.$type === "Field") {
+          nodeState.state.code = this.formatField(nodeState.node);
+        }
+      },
+    );
+
+    return root.state.code;
   }
 
   private randomForm(depth: number): IForm {
@@ -193,44 +231,6 @@ export default class ProbabilisticSearchFormGenerator {
     }
 
     return children;
-  }
-
-  private toFormLang(form: IForm): string {
-    const root = {
-      node: form,
-      state: {
-        code: "",
-      },
-    };
-    traverseDFS<FormLangNodeState>(
-      root,
-      (nodeState) => {
-        if (!nodeState.children) {
-          nodeState.children = this.getChildren(nodeState.node).map(
-            (childNode) => ({
-              node: childNode,
-              state: {
-                code: "",
-              },
-            }),
-          );
-        }
-        return nodeState.children;
-      },
-      () => {},
-      (nodeState) => {
-        if (nodeState.node.$type === "Form") {
-          nodeState.state.code = this.formatForm(
-            nodeState.node,
-            nodeState.children!.map((child) => child.state.code),
-          );
-        } else if (nodeState.node.$type === "Field") {
-          nodeState.state.code = this.formatField(nodeState.node);
-        }
-      },
-    );
-
-    return root.state.code;
   }
 
   private formatField(field: IField): string {

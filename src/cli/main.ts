@@ -215,7 +215,8 @@ export const generateDataAction = async (
     fieldComponentsDocument.parseResult.value.components,
   );
   try {
-    console.log(formGen.generateForm());
+    const form = formGen.generateForm();
+    console.log(formGen.toFormLang(form));
   } catch (err) {
     console.error(err);
     console.error(chalk.red(err));
