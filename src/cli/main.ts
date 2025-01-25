@@ -3,10 +3,11 @@ import TreeSitterParser, { TreeCursor } from "tree-sitter";
 import * as JavaScriptTreeSitter from "tree-sitter-javascript";
 import { Command } from "commander";
 import * as prettier from "prettier";
+import { faker } from "@faker-js/faker";
 import type { Model } from "../language/generated/ast.js";
 import { FormLangLanguageMetaData } from "../language/generated/module.js";
 import { createFormLangServices } from "../language/form-lang-module.js";
-import { extractAstNode } from "./cli-util.js";
+import { extractAstNode, parseFormLangString } from "./cli-util.js";
 import { NodeFileSystem } from "langium/node";
 import * as url from "node:url";
 import * as fs from "node:fs/promises";
@@ -14,6 +15,7 @@ import * as path from "node:path";
 import { dumpAst } from "./dump-ast.js";
 import { ReactCompiler } from "../compiler/reactCompiler.js";
 import { ICompilerConfig } from "../compiler/compilerConfig.js";
+import ProbabilisticSearchFormGenerator from "../generation/formGen.js";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 const packagePath = path.resolve(__dirname, "..", "..", "package.json");
@@ -159,10 +161,44 @@ export const generateDataAction = async (
   fileName: string,
   opts: GenerateOptions,
 ): Promise<void> => {
-  const services = createFormLangServices(NodeFileSystem).FormLang;
+  const fieldComponentsDocument = await parseFormLangString(`
+  component myTextBox {
+    prop textColor
+    prop textSize
+    prop textWeight
+    prop borderColor
+  }
+  component myCheckbox {
+    prop size
+  }
+  component otherTextBox {}
+  component counter {
+    prop style
+  }
+  `);
+  const formComponentsDocument = await parseFormLangString(`
+  component userDetailsContainer {}
+  component formContainer {}
+  component someOtherContainer {}
+  component OtherContainer2 {}
+  `);
+  const generatorConfig = {
+    alpha: 0.3,
+    beta: 0.7,
+    gamma: 0.2,
+    delta: 0.4,
+    epsilon: 0.5,
+    D: 4,
+    maxChildren: 6,
+  };
+  const formGen = new ProbabilisticSearchFormGenerator(
+    generatorConfig,
+    faker,
+    formComponentsDocument.parseResult.value.components,
+    fieldComponentsDocument.parseResult.value.components,
+  );
   try {
-    // TODO - Implement
-    console.log(services, opts);
+    formGen.generateForm();
   } catch (err) {
     console.error(err);
     console.error(chalk.red(err));

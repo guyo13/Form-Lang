@@ -15,7 +15,7 @@ const probabilisticSearchParamsSchema = z.object({
   epsilon: probabilitySchema.optional().default(0),
   D: integerSchema.optional(),
   minChildren: integerSchema.optional().default(0),
-  maChildren: integerSchema.min(1).default(2),
+  maxChildren: integerSchema.min(1).default(2),
   amin: integerSchema.min(0).default(0),
   amax: integerSchema.min(0).default(3),
   formIdMinLength: integerSchema.min(2).default(3),
@@ -83,6 +83,8 @@ export default class ProbabilisticSearchFormGenerator {
   readonly ids: Set<string>;
   readonly availableFormComponentIds: Array<Component>;
   readonly availableFieldComponentIds: Array<Component>;
+  static readonly BUILTIN_STATE_TYPES: Readonly<Array<BuiltInType>> =
+    Object.freeze(["boolean", "number", "string"]);
 
   constructor(
     params: ProbabilisticSearchParams,
@@ -111,7 +113,11 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomComponent = this.randomComponent.bind(this);
     this.randomValueExpression = this.randomValueExpression.bind(this);
     this.randomJsExpression = this.randomJsExpression.bind(this);
+    this.wrapInJsIife = this.wrapInJsIife.bind(this);
+    this.parameterizedRandomJsExpression =
+      this.parameterizedRandomJsExpression.bind(this);
     this.randomFieldState = this.randomFieldState.bind(this);
+    console.dir(this.params);
   }
 
   public generateForm() {
@@ -119,6 +125,8 @@ export default class ProbabilisticSearchFormGenerator {
     const root = this.randomForm(initialDepth);
     traverseDFS(root, this.getChildren, this.onEntry, this.onExit);
 
+    // TODO - DELETEME
+    console.dir(root);
     return this.toFormLang(root);
   }
 
@@ -127,7 +135,7 @@ export default class ProbabilisticSearchFormGenerator {
       $type: "Form",
       name: this.randomFormId(),
       component: this.randomFormComponent(),
-      children: [],
+      children: null,
       depth,
     };
   }
@@ -258,11 +266,89 @@ export default class ProbabilisticSearchFormGenerator {
 
     return fromPreGeneratedList
       ? this.faker.helpers.arrayElement(RANDOM_JS_EXPRESSIONS)
-      : `(() => ${this.faker.number.float(100)})()`;
+      : this.wrapInJsIife(this.faker.number.float(100).toString());
+  }
+
+  private wrapInJsIife(expr: string): string {
+    return `(() => ${expr})()`;
+  }
+
+  private parameterizedRandomJsExpression(
+    type: BuiltInType,
+    isArray: boolean,
+    isAsExpression: boolean,
+    arrayElementCount: number = 0,
+  ): RandomValueExpression {
+    let expr: string;
+    // TODO - Randomize the categories and properties of values
+    const valueGenerator =
+      type === "string"
+        ? this.faker.person.fullName
+        : type === "number"
+          ? this.faker.number.float
+          : this.faker.datatype.boolean;
+    if (isArray) {
+      expr = JSON.stringify(
+        this.faker.helpers.multiple(() => valueGenerator(), {
+          count: arrayElementCount,
+        }),
+      );
+      isAsExpression = true;
+      const shouldWrapInIife = this.faker.datatype.boolean();
+      expr = shouldWrapInIife ? this.wrapInJsIife(expr) : expr;
+    } else {
+      expr = `${valueGenerator()}`;
+    }
+
+    return {
+      expr,
+      isAsExpression,
+    };
   }
 
   private randomFieldState(): IFieldState | null {
-    // TODO Implement
-    return null;
+    const isStateManaged = this.faker.datatype.boolean({
+      probability: this.params.beta,
+    });
+    if (isStateManaged) {
+      const isArray = this.faker.datatype.boolean({
+        probability: this.params.gamma,
+      });
+      const arrayElementCount = isArray
+        ? this.faker.number.int({
+            min: this.params.amin,
+            max: this.params.amax,
+          })
+        : 0;
+      const dataType = this.faker.helpers.arrayElement(
+        ProbabilisticSearchFormGenerator.BUILTIN_STATE_TYPES,
+      );
+      const containsDefaultValue = this.faker.datatype.boolean({
+        probability: this.params.delta,
+      });
+      const mustBeExpression = dataType !== "string" || isArray;
+      const isAsExpressionProbability = mustBeExpression
+        ? 1
+        : this.params.epsilon;
+      const isAsExpression = this.faker.datatype.boolean({
+        probability: isAsExpressionProbability,
+      });
+      const defaultValue = containsDefaultValue
+        ? this.parameterizedRandomJsExpression(
+            dataType,
+            isArray,
+            isAsExpression,
+            arrayElementCount,
+          )
+        : null;
+
+      return {
+        type: dataType,
+        isArray,
+        defaultValue,
+      };
+    } else {
+      return null;
+    }
   }
 }
