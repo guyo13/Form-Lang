@@ -192,6 +192,7 @@ export default class ProbabilisticSearchFormGenerator {
         }),
       );
     }
+    this.ids.add(id);
 
     return id;
   }
