@@ -126,6 +126,7 @@ export default class ProbabilisticSearchFormGenerator {
     this.wrapInJsIife = this.wrapInJsIife.bind(this);
     this.parameterizedRandomJsExpression =
       this.parameterizedRandomJsExpression.bind(this);
+    this.wrapInQuotes = this.wrapInQuotes.bind(this);
     this.randomFieldState = this.randomFieldState.bind(this);
     this.indentLines = this.indentLines.bind(this);
     this.escapeString = this.escapeString.bind(this);
@@ -239,7 +240,7 @@ export default class ProbabilisticSearchFormGenerator {
       const defaultValue = state.defaultValue;
       const stateTypeCode = `${state.type}${state.isArray ? "[]" : ""}`;
       const stateDefaultValueCode = defaultValue
-        ? ` default ${this.formatExpression(defaultValue)}`
+        ? ` default ${this.formatExpression(defaultValue, state.isArray)}`
         : "";
       stateDefCode = `state ${stateTypeCode}${stateDefaultValueCode}\n`;
     }
@@ -268,15 +269,23 @@ export default class ProbabilisticSearchFormGenerator {
     return `${openingFormCode}\n${formComponentDef}\n${fieldsCode}\n${closingBrace}\n`;
   }
 
-  private formatExpression(expression: RandomValueExpression) {
-    return `"${this.escapeString(expression.expr)}"${expression.isAsExpression ? " as expression" : ""}`;
+  private formatExpression(
+    expression: RandomValueExpression,
+    isArray: boolean,
+  ) {
+    const shouldEscape = !isArray;
+    const formattedExprString = shouldEscape
+      ? this.escapeString(expression.expr)
+      : expression.expr;
+
+    return `"${formattedExprString}"${expression.isAsExpression ? " as expression" : ""}`;
   }
 
   private formatPropAssignment(
     propName: string,
     propValue: RandomValueExpression,
   ): string {
-    return `${propName}=${this.formatExpression(propValue)}`;
+    return `${propName}=${this.formatExpression(propValue, false)}`;
   }
 
   private formatFieldComponentDef(component: IFieldComponent): string {
@@ -370,31 +379,40 @@ export default class ProbabilisticSearchFormGenerator {
     isAsExpression: boolean,
     arrayElementCount: number = 0,
   ): RandomValueExpression {
+    // Arrays must be passed as expressions
+    isAsExpression = isAsExpression || isArray;
     let expr: string;
+    const isString = type === "string";
     // TODO - Randomize the categories and properties of values
-    const valueGenerator =
-      type === "string"
-        ? this.faker.person.fullName
-        : type === "number"
-          ? this.faker.number.float
-          : this.faker.datatype.boolean;
+    const valueGenerator = isString
+      ? this.faker.person.fullName
+      : type === "number"
+        ? this.faker.number.float
+        : this.faker.datatype.boolean;
     if (isArray) {
       expr = JSON.stringify(
         this.faker.helpers.multiple(() => valueGenerator(), {
           count: arrayElementCount,
         }),
       );
-      isAsExpression = true;
       const shouldWrapInIife = this.faker.datatype.boolean();
       expr = shouldWrapInIife ? this.wrapInJsIife(expr) : expr;
     } else {
-      expr = `${valueGenerator()}`;
+      // Add quotes around string expressions
+      const shouldWrapInQuotes = isString && isAsExpression;
+      const quoteType = this.faker.datatype.boolean() ? '"' : "'";
+      const value = valueGenerator();
+      expr = `${shouldWrapInQuotes ? this.wrapInQuotes(value as string, quoteType) : value}`;
     }
 
     return {
       expr,
       isAsExpression,
     };
+  }
+
+  private wrapInQuotes(str: string, quoteType: string): string {
+    return `${quoteType}${str}${quoteType}`;
   }
 
   private randomFieldState(): IFieldState | null {
