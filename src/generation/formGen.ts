@@ -303,12 +303,7 @@ export default class ProbabilisticSearchFormGenerator {
   private randomId(min: number, max: number): string {
     let id = undefined;
     while (id === undefined || this.ids.has(id)) {
-      id = this.faker.string.alphanumeric(
-        this.faker.number.int({
-          min,
-          max,
-        }),
-      );
+      id = this.faker.helpers.fromRegExp(/[_a-zA-Z][\w_]*/);
     }
     this.ids.add(id);
 
@@ -445,8 +440,12 @@ export default class ProbabilisticSearchFormGenerator {
     }
   }
 
-  private indentLines(code: string, level: number): string {
-    const indentation = "\t".repeat(level);
+  private indentLines(
+    code: string,
+    level: number,
+    indentSequence = "\t",
+  ): string {
+    const indentation = indentSequence.repeat(level);
 
     return code
       .replace(/(\r\n|\r|\n)/g, "\n")
