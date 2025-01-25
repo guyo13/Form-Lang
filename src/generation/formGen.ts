@@ -172,8 +172,9 @@ export default class ProbabilisticSearchFormGenerator {
   }
 
   private randomChildren(form: IForm): Array<IFormChild> {
+    const isAtRoot = form.depth === 0;
     const numChildren = this.faker.number.int({
-      min: this.params.minChildren!,
+      min: isAtRoot ? 1 : this.params.minChildren!,
       max: this.params.maxChildren!,
     });
     const children: Array<IFormChild> = Array(numChildren);
