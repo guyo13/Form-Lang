@@ -129,7 +129,6 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomFieldState = this.randomFieldState.bind(this);
     this.indentLines = this.indentLines.bind(this);
     this.escapeString = this.escapeString.bind(this);
-    console.dir(this.params);
   }
 
   public generateForm() {
@@ -244,15 +243,17 @@ export default class ProbabilisticSearchFormGenerator {
       stateDefCode = `state ${stateTypeCode}${stateDefaultValueCode}\n`;
     }
     const componentCode = this.formatFieldComponentDef(field.component);
+    const openingFieldCode = this.indentLines(
+      `field ${field.name} {`,
+      field.depth,
+    );
     const fieldBody = this.indentLines(
       `${stateDefCode}${componentCode}`,
       field.depth + 1,
     );
+    const closingBrace = this.indentLines("}", field.depth);
 
-    return this.indentLines(
-      `field ${field.name} {\n${fieldBody}\n}`,
-      field.depth,
-    );
+    return `${openingFieldCode}\n${fieldBody}\n${closingBrace}`;
   }
 
   private formatForm(form: IForm, fieldsCodes: Array<string>): string {
