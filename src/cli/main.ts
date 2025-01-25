@@ -163,17 +163,23 @@ export const generateDataAction = async (
 ): Promise<void> => {
   const fieldComponentsDocument = await parseFormLangString(`
   component myTextBox {
-    prop textColor
-    prop textSize
-    prop textWeight
-    prop borderColor
+    props {
+      textColor
+      textSize
+      textWeight
+      borderColor
+    }
   }
   component myCheckbox {
-    prop size
+    props {
+      size
+    }
   }
   component otherTextBox {}
   component counter {
-    prop style
+    props {
+      style
+    }
   }
   `);
   const formComponentsDocument = await parseFormLangString(`
@@ -198,7 +204,7 @@ export const generateDataAction = async (
     fieldComponentsDocument.parseResult.value.components,
   );
   try {
-    formGen.generateForm();
+    console.log(formGen.generateForm());
   } catch (err) {
     console.error(err);
     console.error(chalk.red(err));
