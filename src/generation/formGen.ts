@@ -135,7 +135,7 @@ export default class ProbabilisticSearchFormGenerator {
   private randomField(depth: number): IField {
     return {
       $type: "Field",
-      name: this.randomFormId(),
+      name: this.randomFieldId(),
       component: this.randomFormComponent(),
       state: this.randomFieldState(),
       depth,
