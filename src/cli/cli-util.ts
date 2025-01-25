@@ -3,11 +3,11 @@ import {
   EmptyFileSystem,
   LangiumCoreServices,
   LangiumDocument,
+  URI,
 } from "langium";
 import chalk from "chalk";
 import * as path from "node:path";
 import * as fs from "node:fs";
-import { URI } from "langium";
 import { createFormLangServices } from "../language/form-lang-module.js";
 import { parseHelper } from "langium/test";
 import { Model } from "../language/generated/ast.js";
@@ -70,10 +70,17 @@ export async function extractAstNode<T extends AstNode>(
   return (await extractDocument(fileName, services)).parseResult?.value as T;
 }
 
-export async function parseFormLangString(input: string) {
+export function getFormLangStringParser() {
   const services = createFormLangServices(EmptyFileSystem);
-  const parse = parseHelper<Model>(services.FormLang);
-  const document = await parse(input);
+
+  return parseHelper<Model>(services.FormLang);
+}
+
+export async function parseFormLangString(
+  input: string,
+  parser: ReturnType<typeof getFormLangStringParser>,
+): Promise<LangiumDocument<Model>> {
+  const document = await parser(input);
   handleValidationErrors(document);
 
   return document;

@@ -7,7 +7,11 @@ import { faker } from "@faker-js/faker";
 import type { Model } from "../language/generated/ast.js";
 import { FormLangLanguageMetaData } from "../language/generated/module.js";
 import { createFormLangServices } from "../language/form-lang-module.js";
-import { extractAstNode, parseFormLangString } from "./cli-util.js";
+import {
+  extractAstNode,
+  getFormLangStringParser,
+  parseFormLangString,
+} from "./cli-util.js";
 import { NodeFileSystem } from "langium/node";
 import * as url from "node:url";
 import * as fs from "node:fs/promises";
@@ -161,7 +165,9 @@ export const generateDataAction = async (
   fileName: string,
   opts: GenerateOptions,
 ): Promise<void> => {
-  const fieldComponentsDocument = await parseFormLangString(`
+  const parser = getFormLangStringParser();
+  const fieldComponentsDocument = await parseFormLangString(
+    `
   component myTextBox {
     props {
       textColor
@@ -181,13 +187,18 @@ export const generateDataAction = async (
       style
     }
   }
-  `);
-  const formComponentsDocument = await parseFormLangString(`
+  `,
+    parser,
+  );
+  const formComponentsDocument = await parseFormLangString(
+    `
   component userDetailsContainer {}
   component formContainer {}
   component someOtherContainer {}
   component OtherContainer2 {}
-  `);
+  `,
+    parser,
+  );
   const generatorConfig = {
     alpha: 0.3,
     beta: 0.7,
