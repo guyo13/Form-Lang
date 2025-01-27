@@ -225,6 +225,8 @@ export const generateDataAction = async (
     console.log(serializedModifiedForm);
     console.log("// removedNode");
     console.dir(removedNode);
+    console.log("// removedNode English");
+    console.dir(formGen.toEnglish(removedNode));
     console.log("// removedNodeContext");
     console.dir(removedNodeContext);
   } catch (err) {

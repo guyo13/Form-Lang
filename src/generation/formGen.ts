@@ -120,6 +120,11 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomChildren = this.randomChildren.bind(this);
     this.toFormLang = this.toFormLang.bind(this);
     this.removeRandomNode = this.removeRandomNode.bind(this);
+    this.toEnglish = this.toEnglish.bind(this);
+    this.formToEnglish = this.formToEnglish.bind(this);
+    this.fieldToEnglish = this.fieldToEnglish.bind(this);
+    this.fieldComponentDefToEnglish =
+      this.fieldComponentDefToEnglish.bind(this);
     this.formatField = this.formatField.bind(this);
     this.formatForm = this.formatForm.bind(this);
     this.formatExpression = this.formatExpression.bind(this);
@@ -191,7 +196,7 @@ export default class ProbabilisticSearchFormGenerator {
   public removeRandomNode(form: IForm) {
     const root = { node: form, state: { parent: null } };
     let isRemoved = false;
-    let removedNode: RemoveNodeAlgorithmNodeState | null = null;
+    let removedNode: IFormChild;
     let removedNodeContext;
     while (!isRemoved) {
       traverseDFS<RemoveNodeAlgorithmNodeState>(
@@ -221,7 +226,7 @@ export default class ProbabilisticSearchFormGenerator {
           });
           if (shouldRemove) {
             isRemoved = true;
-            removedNode = nodeState;
+            removedNode = nodeState.node;
             const removedNodeParent = nodeState.state.parent?.node;
             // Should always be true if there is a parent - mainly for TS sanity
             const isParentForm = removedNodeParent?.$type === "Form";
@@ -254,7 +259,59 @@ export default class ProbabilisticSearchFormGenerator {
       );
     }
 
+    // @ts-ignore
     return { removedNode, removedNodeContext };
+  }
+
+  public toEnglish(formOrField: IFormChild): string {
+    if (formOrField.$type === "Form") {
+      return this.formToEnglish(formOrField);
+    } else {
+      return this.fieldToEnglish(formOrField);
+    }
+  }
+
+  private fieldToEnglish(field: IField): string {
+    let stateDefStatement = "";
+    if (field.state) {
+      const state = field.state;
+      const defaultValue = state.defaultValue;
+      const stateTypeStatement = ` with state of type: '${state.type}${state.isArray ? "[]" : ""}'`;
+      const stateDefaultValueStatement = defaultValue
+        ? ` and its default value is: ${defaultValue.expr}${defaultValue.isAsExpression ? " (and is passed as an expression)" : ""}`
+        : "";
+      stateDefStatement = `${stateTypeStatement}${stateDefaultValueStatement},`;
+    }
+    const componentStatement = this.fieldComponentDefToEnglish(field.component);
+
+    return this.indentLines(
+      // TODO - Randomly choose "id" or "ID" or "name"
+      `a field whose id is '${field.name}'${stateDefStatement} ${stateDefStatement ? "and is " : ""}using the ${componentStatement}.\n`,
+      field.depth,
+    );
+  }
+
+  private formToEnglish(form: IForm): string {
+    const componentStatement = this.fieldComponentDefToEnglish(form.component);
+    const fieldsStatements = form.children!.map(this.toEnglish).join("\n");
+
+    const formStatement = this.indentLines(
+      // TODO - Randomly choose "id" or "ID" or "name"
+      `a form whose id is '${form.name}' using the ${componentStatement},${fieldsStatements ? "whose children are:" : "with no children."}\n`,
+      form.depth,
+    );
+
+    return `${formStatement}${fieldsStatements}`;
+  }
+
+  private fieldComponentDefToEnglish(component: IFieldComponent): string {
+    const propAssignmentsCode = Object.entries(component.propAssignments)
+      .map(([propName, propValue]) =>
+        this.formatPropAssignment(propName, propValue),
+      )
+      .join(" "); // TODO - Randomly choose the separator
+
+    return `component '${component.component.name}'${propAssignmentsCode ? ` to which the following prop assignments are made: ${propAssignmentsCode}` : ""}`;
   }
 
   private randomForm(depth: number): IForm {
