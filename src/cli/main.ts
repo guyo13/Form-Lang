@@ -229,6 +229,14 @@ export const generateDataAction = async (
     console.dir(formGen.toEnglish(removedNode));
     console.log("// removedNodeContext");
     console.dir(removedNodeContext);
+    console.log("// removedNodeContext English");
+    console.dir(
+      formGen
+        .removedNodeContextToEnglishStatements(removedNodeContext)
+        .filter(Boolean)
+        .map((s) => "* " + s)
+        .join("\n"),
+    );
   } catch (err) {
     console.error(err);
     console.error(chalk.red(err));

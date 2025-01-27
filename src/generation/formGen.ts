@@ -93,6 +93,12 @@ type RemoveNodeAlgorithmNodeState = NodeState<
   }
 >;
 
+interface RemovedNodeContext {
+  parent: IFormChild | null;
+  before: IFormChild | null;
+  after: IFormChild | null;
+}
+
 export default class ProbabilisticSearchFormGenerator {
   readonly params: ProbabilisticSearchParams;
   readonly faker: Faker;
@@ -121,6 +127,9 @@ export default class ProbabilisticSearchFormGenerator {
     this.toFormLang = this.toFormLang.bind(this);
     this.removeRandomNode = this.removeRandomNode.bind(this);
     this.toEnglish = this.toEnglish.bind(this);
+    this.removedNodeContextToEnglishStatements =
+      this.removedNodeContextToEnglishStatements.bind(this);
+    this.idToEnglish = this.idToEnglish.bind(this);
     this.formToEnglish = this.formToEnglish.bind(this);
     this.fieldToEnglish = this.fieldToEnglish.bind(this);
     this.fieldComponentDefToEnglish =
@@ -197,7 +206,7 @@ export default class ProbabilisticSearchFormGenerator {
     const root = { node: form, state: { parent: null } };
     let isRemoved = false;
     let removedNode: IFormChild;
-    let removedNodeContext;
+    let removedNodeContext: RemovedNodeContext;
     while (!isRemoved) {
       traverseDFS<RemoveNodeAlgorithmNodeState>(
         root,
@@ -227,7 +236,7 @@ export default class ProbabilisticSearchFormGenerator {
           if (shouldRemove) {
             isRemoved = true;
             removedNode = nodeState.node;
-            const removedNodeParent = nodeState.state.parent?.node;
+            const removedNodeParent = nodeState.state.parent?.node ?? null;
             // Should always be true if there is a parent - mainly for TS sanity
             const isParentForm = removedNodeParent?.$type === "Form";
             const removedNodeChildIndex = isParentForm
@@ -271,6 +280,36 @@ export default class ProbabilisticSearchFormGenerator {
     }
   }
 
+  public removedNodeContextToEnglishStatements(
+    removedNodeContext: RemovedNodeContext,
+  ): string[] {
+    let siblingsStatement = "";
+    const parentStatement = removedNodeContext.parent
+      ? `is a child of the ${this.idToEnglish(removedNodeContext.parent)}.`
+      : "";
+    const isAfter = Boolean(removedNodeContext.before);
+    const isBefore = Boolean(removedNodeContext.after);
+    const isBetween = isBefore && isAfter;
+    if (isBetween) {
+      siblingsStatement = `is located between the ${this.idToEnglish(removedNodeContext.before!)} and the ${this.idToEnglish(removedNodeContext.after!)}`;
+    } else if (isAfter) {
+      siblingsStatement = `is located after the ${this.idToEnglish(removedNodeContext.before!)}`;
+    } else if (isBefore) {
+      siblingsStatement = `is located before the ${this.idToEnglish(removedNodeContext.after!)}`;
+    }
+
+    return [parentStatement, siblingsStatement];
+  }
+
+  private idToEnglish(formOrField: IFormChild): string {
+    // TODO - Randomly choose "id" or "ID" or "name"
+    if (formOrField.$type === "Form") {
+      return `form whose id is '${formOrField.name}'`;
+    } else {
+      return `field whose id is '${formOrField.name}'`;
+    }
+  }
+
   private fieldToEnglish(field: IField): string {
     let stateDefStatement = "";
     if (field.state) {
@@ -285,8 +324,7 @@ export default class ProbabilisticSearchFormGenerator {
     const componentStatement = this.fieldComponentDefToEnglish(field.component);
 
     return this.indentLines(
-      // TODO - Randomly choose "id" or "ID" or "name"
-      `a field whose id is '${field.name}'${stateDefStatement} ${stateDefStatement ? "and is " : ""}using the ${componentStatement}.\n`,
+      `a ${this.idToEnglish(field)}${stateDefStatement} ${stateDefStatement ? "and is " : ""}using the ${componentStatement}.\n`,
       field.depth,
     );
   }
@@ -296,8 +334,7 @@ export default class ProbabilisticSearchFormGenerator {
     const fieldsStatements = form.children!.map(this.toEnglish).join("\n");
 
     const formStatement = this.indentLines(
-      // TODO - Randomly choose "id" or "ID" or "name"
-      `a form whose id is '${form.name}' using the ${componentStatement},${fieldsStatements ? "whose children are:" : "with no children."}\n`,
+      `a ${this.idToEnglish(form)} using the ${componentStatement},${fieldsStatements ? "whose children are:" : "with no children."}\n`,
       form.depth,
     );
 

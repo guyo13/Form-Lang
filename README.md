@@ -74,7 +74,8 @@ Algorithm:
 
 #### TODO - data generation
 * **DONE** - Create an algorithm to randomly remove a node from the Form tree - recording the Parent and which child nodes came Before and After it if any.
-* Create a formatter that formats the node in plain English.
+* **DONE** - Create a formatter that formats the node in plain English.
+* **DONE** - Create a formatter that formats the context of the node in plain English.
 * Create a function that generates a Training example:
   * Generate a random Form - $F$.
   * Serialize the Form to FormLang code - $s(F)$.
