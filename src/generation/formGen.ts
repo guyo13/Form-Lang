@@ -45,17 +45,17 @@ export interface ProbabilisticSearchParams {
 
 type Component = ComponentDef;
 
-interface RandomValueExpression {
+export interface RandomValueExpression {
   expr: string;
   isAsExpression: boolean;
 }
 
-interface IFieldComponent {
+export interface IFieldComponent {
   component: Component;
   propAssignments: Record<string, RandomValueExpression>;
 }
 
-interface IForm {
+export interface IForm {
   readonly $type: "Form";
   name: string;
   component: IFieldComponent;
@@ -63,13 +63,13 @@ interface IForm {
   depth: number;
 }
 
-interface IFieldState {
+export interface IFieldState {
   type: BuiltInType;
   isArray: boolean;
   defaultValue: RandomValueExpression | null;
 }
 
-interface IField {
+export interface IField {
   readonly $type: "Field";
   name: string;
   component: IFieldComponent;
@@ -77,23 +77,23 @@ interface IField {
   depth: number;
 }
 
-type IFormChild = IForm | IField;
+export type IFormChild = IForm | IField;
 
-type FormLangNodeState = NodeState<
+export type FormLangNodeState = NodeState<
   IFormChild,
   {
     code: string;
   }
 >;
 
-type RemoveNodeAlgorithmNodeState = NodeState<
+export type RemoveNodeAlgorithmNodeState = NodeState<
   IFormChild,
   {
     parent: RemoveNodeAlgorithmNodeState | null;
   }
 >;
 
-interface RemovedNodeContext {
+export interface RemovedNodeContext {
   parent: IFormChild | null;
   before: IFormChild | null;
   after: IFormChild | null;

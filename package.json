@@ -28,6 +28,13 @@
     "test": "vitest run",
     "ext:dev": "vsce package --no-dependencies --allow-missing-repository --skip-license"
   },
+  "exports": {
+    "./library": {
+      "types": "./types/lib/index.d.ts",
+      "require": "./out/cjs/index.cjs",
+      "import": "./out/esm/index.mjs"
+    }
+  },
   "dependencies": {
     "@codingame/monaco-vscode-editor-service-override": "~3.2.3",
     "@codingame/monaco-vscode-keybindings-service-override": "~3.2.3",
@@ -61,7 +68,8 @@
     "typescript": "~5.1.6",
     "vite": "~5.2.7",
     "vitest": "~1.4.0",
-    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3"
+    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3",
+    "vscode-languageserver-types": "^3.17.5"
   },
   "displayName": "form-lang",
   "engines": {

@@ -102,6 +102,9 @@ importers:
       vscode:
         specifier: npm:@codingame/monaco-vscode-api@~3.2.3
         version: '@codingame/monaco-vscode-api@3.2.3'
+      vscode-languageserver-types:
+        specifier: ^3.17.5
+        version: 3.17.5
 
 packages:
 
