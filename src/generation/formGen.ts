@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Faker } from "@faker-js/faker";
+import { NodeState, traverseDFS } from "@guyo13/langium-utils/traversal";
 import type { BuiltInType, ComponentDef } from "../language/generated/ast.js";
-import { NodeState, traverseDFS } from "../util/traversal.js";
 import { RANDOM_JS_EXPRESSIONS } from "./data.js";
 
 const probabilitySchema = z.number().min(0).lt(1);

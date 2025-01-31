@@ -1,3 +1,4 @@
+import { NodeState, traverseDFS } from "@guyo13/langium-utils/traversal";
 import type {
   BuiltInType,
   ComponentPropKey,
@@ -10,7 +11,6 @@ import type {
 import { isField, isForm, isModel } from "../language/generated/ast.js";
 import type { ICompilerConfig, IComponentConfig } from "./compilerConfig.js";
 import { capitalize, uncapitalize, zip } from "./compilerUtil.js";
-import { NodeState, traverseDFS } from "../util/traversal.js";
 
 interface StateDescription {
   type: BuiltInType;

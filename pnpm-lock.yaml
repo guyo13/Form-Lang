@@ -18,8 +18,8 @@ importers:
         specifier: ^9.4.0
         version: 9.4.0
       '@guyo13/langium-utils':
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: ^1.1.1
+        version: 1.1.1
       chalk:
         specifier: ~5.3.0
         version: 5.3.0
@@ -382,8 +382,8 @@ packages:
     resolution: {integrity: sha512-85+k0AxaZSTowL0gXp8zYWDIrWclTbRPg/pm/V0dSFZ6W6D4lhcG3uuZl4zLsEKfEvs69xDbLN2cHQudwp95JA==}
     engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
-  '@guyo13/langium-utils@1.0.1':
-    resolution: {integrity: sha512-3FFB/gfk3tWCzpcg08Bnoaw22s8pk4nGq+6CCpb9TanA6yQzsIIZ07vTy2hmDipQ8HN34DOAMWDIYOX/Mof6Bw==}
+  '@guyo13/langium-utils@1.1.1':
+    resolution: {integrity: sha512-hY1uKmTAyT6sN1DV0Nb6XU8X3E+FoDLfXcxIzvwelXikoQPZLLNFG+DNCaS7U/Z1K2jBGVmdpqA9tKBPRSlp3A==}
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -2473,7 +2473,7 @@ snapshots:
 
   '@faker-js/faker@9.4.0': {}
 
-  '@guyo13/langium-utils@1.0.1': {}
+  '@guyo13/langium-utils@1.1.1': {}
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
