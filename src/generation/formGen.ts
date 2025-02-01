@@ -119,6 +119,7 @@ export default class ProbabilisticSearchFormGenerator {
     this.availableFormComponentIds = availableFormComponentIds;
     this.availableFieldComponentIds = availableFieldComponentIds;
     this.ids = new Set();
+    this.clear = this.clear.bind(this);
     this.generateForm = this.generateForm.bind(this);
     this.randomForm = this.randomForm.bind(this);
     this.randomField = this.randomField.bind(this);
@@ -154,6 +155,10 @@ export default class ProbabilisticSearchFormGenerator {
     this.randomFieldState = this.randomFieldState.bind(this);
     this.indentLines = this.indentLines.bind(this);
     this.escapeString = this.escapeString.bind(this);
+  }
+
+  public clear() {
+    this.ids.clear();
   }
 
   public generateForm() {

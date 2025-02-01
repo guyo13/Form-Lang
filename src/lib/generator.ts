@@ -53,6 +53,7 @@ export function generateRandomFormPrompt(
     .filter(Boolean)
     .map((s) => "* " + s)
     .join("\n");
+  formGen.clear();
 
   return {
     form,
