@@ -4,7 +4,8 @@ import {
   createConnection,
   ProposedFeatures,
 } from "vscode-languageserver/node.js";
-import { createFormLangServices } from "./form-lang-module.js";
+
+import { createFormLangServices } from "./form-lang-module-lsp.js";
 
 // Create a connection to the client
 const connection = createConnection(ProposedFeatures.all);

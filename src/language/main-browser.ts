@@ -5,7 +5,8 @@ import {
   BrowserMessageWriter,
   createConnection,
 } from "vscode-languageserver/browser.js";
-import { createFormLangServices } from "./form-lang-module.js";
+
+import { createFormLangServices } from "./form-lang-module-lsp.js";
 
 declare const self: DedicatedWorkerGlobalScope;
 

@@ -1,4 +1,3 @@
-import { createFormLangServices } from "../language/form-lang-module.js";
 import { NodeFileSystem } from "langium/node";
 import {
   checkJsAst,
@@ -10,6 +9,7 @@ import type { Model } from "../language/generated/ast.js";
 import { ICompilerConfig } from "../compiler/compilerConfig.js";
 import { ReactCompiler } from "../compiler/reactCompiler.js";
 import chalk from "chalk";
+import { createFormLangServices } from "../language/form-lang-module-lsp.js";
 
 export interface GenerateReactOptions extends GenerateOptions {
   validate: boolean;

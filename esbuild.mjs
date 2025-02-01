@@ -138,8 +138,9 @@ const librarySharedConfig = {
 
 const libraryEsmCtx = await esbuild.context({
   ...librarySharedConfig,
-  outdir: "out/esm",
+  outdir: "out/esm/lib",
   platform: "neutral",
+  mainFields: ["module"],
   format: "esm",
   outExtension: {
     ".js": ".mjs",
@@ -149,12 +150,9 @@ const libraryEsmCtx = await esbuild.context({
 
 const libraryCjsCtx = await esbuild.context({
   ...librarySharedConfig,
-  outdir: "out/cjs",
+  outdir: "out/cjs/lib",
   platform: "node",
   format: "cjs",
-  outExtension: {
-    ".js": ".cjs",
-  },
   plugins: [...commonPlugins, cjsPlugin],
 });
 

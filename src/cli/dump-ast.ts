@@ -9,9 +9,9 @@ import {
   GenerateOptions,
 } from "./cli-util.js";
 import { serializeAst } from "../lib/language.js";
-import { createFormLangServices } from "../language/form-lang-module.js";
 import { NodeFileSystem } from "langium/node";
 import chalk from "chalk";
+import { createFormLangServices } from "../language/form-lang-module-lsp.js";
 
 export async function dumpAst(
   model: Model,
