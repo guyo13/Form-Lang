@@ -1,6 +1,11 @@
+import type { Faker } from "@faker-js/faker";
+import { faker as defaultFaker } from "@faker-js/faker";
 export { faker as defaultFaker } from "@faker-js/faker";
 export { default as ProbabilisticSearchFormGenerator } from "../generation/formGen.js";
-import ProbabilisticSearchFormGenerator from "../generation/formGen.js";
+import ProbabilisticSearchFormGenerator, {
+  ProbabilisticSearchParams,
+} from "../generation/formGen.js";
+import { getFormLangStringParser, hasErrors } from "./language.js";
 
 export const DEFAULT_GENERATOR_HYPER_PARAMETERS = Object.freeze({
   alpha: 0.3,
@@ -11,6 +16,29 @@ export const DEFAULT_GENERATOR_HYPER_PARAMETERS = Object.freeze({
   D: 4,
   maxChildren: 6,
 });
+
+export async function newFormGen(
+  params: ProbabilisticSearchParams,
+  formComponentsCode: string,
+  fieldComponentsCode: string,
+  faker: Faker = defaultFaker,
+) {
+  const parser = getFormLangStringParser();
+  const formComponents = await parser(formComponentsCode);
+  const fieldComponents = await parser(fieldComponentsCode);
+  if (hasErrors(formComponents)) {
+    throw new Error("formComponentsCode failed with errors");
+  } else if (hasErrors(fieldComponents)) {
+    throw new Error("fieldComponents failed with errors");
+  }
+
+  return new ProbabilisticSearchFormGenerator(
+    params,
+    faker,
+    formComponents.parseResult.value.components,
+    fieldComponents.parseResult.value.components,
+  );
+}
 
 export function generateRandomFormPrompt(
   formGen: ProbabilisticSearchFormGenerator,

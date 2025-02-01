@@ -1,5 +1,5 @@
 import { createFormLangServicesWithoutLsp } from "../language/form-lang-module.js";
-import { DefaultJsonSerializer, EmptyFileSystem, URI } from "langium";
+import { EmptyFileSystem, URI } from "langium";
 import type {
   LangiumCoreServices,
   LangiumDocument,
@@ -42,7 +42,7 @@ export function parseHelper<T extends AstNode = AstNode>(
 ) => Promise<LangiumDocument<T>> {
   const metaData = services.LanguageMetaData;
   const documentBuilder = services.shared.workspace.DocumentBuilder;
-  return async (input, options) => {
+  return async (input, options = { validation: true }) => {
     const uri = URI.parse(
       options?.documentUri ??
         `file:///${nextDocumentId++}${metaData.fileExtensions[0] ?? ""}`,
@@ -63,16 +63,23 @@ export function getDocumentErrors(document: LangiumDocument): Diagnostic[] {
   return (document.diagnostics ?? []).filter((e) => e.severity === 1);
 }
 
+export function hasErrors(document: LangiumDocument): boolean {
+  return getDocumentErrors(document).length > 0;
+}
+
 export function getFormLangStringParser() {
   const services = createFormLangServicesWithoutLsp(EmptyFileSystem);
 
   return parseHelper<Model>(services.FormLang);
 }
 
+export function getServices() {
+  return createFormLangServicesWithoutLsp(EmptyFileSystem);
+}
+
 export function serializeAst(
   model: Model,
   services: LangiumCoreServices,
 ): string {
-  const serializer = new DefaultJsonSerializer(services);
-  return serializer.serialize(model);
+  return services.serializer.JsonSerializer.serialize(model);
 }
