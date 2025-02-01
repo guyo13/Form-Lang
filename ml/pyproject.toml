@@ -8,6 +8,12 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 jupyter = "^1.1.1"
+torch = "^2.6.0"
+torchvision = "^0.21.0"
+torchaudio = "^2.6.0"
+transformers = "^4.48.2"
+datasets = "^3.2.0"
+evaluate = "^0.4.3"
 
 
 [build-system]

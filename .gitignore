@@ -10,3 +10,4 @@ syntaxes/
 .DS_Store
 generated/
 *.vsix
+ml/.ipynb_checkpoints
