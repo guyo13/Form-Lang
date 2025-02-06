@@ -40,7 +40,7 @@ export async function newFormGen(
   );
 }
 
-export function generateRandomFormPrompt(
+export function generateRandomFormPromptData(
   formGen: ProbabilisticSearchFormGenerator,
 ) {
   const form = formGen.generateForm();

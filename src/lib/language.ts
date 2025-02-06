@@ -7,7 +7,7 @@ import type {
   BuildOptions,
   ParserOptions,
 } from "langium";
-import { Model } from "../language/generated/ast.js";
+import { Model, Form } from "../language/generated/ast.js";
 import type { Diagnostic } from "vscode-languageserver-types";
 
 export class ParsingErrors extends Error {
@@ -31,17 +31,15 @@ export interface ParseHelperOptions extends BuildOptions {
   parserOptions?: ParserOptions;
 }
 
-/** Copied from langium-test */
-let nextDocumentId = 1;
-/** Copied from langium-test */
+/** Copied from langium-test. This returns a parse function that IS NOT SAFE to use if a clean context is required between subsequent parses! */
 export function parseHelper<T extends AstNode = AstNode>(
   services: LangiumCoreServices,
 ): (
   input: string,
   options?: ParseHelperOptions,
 ) => Promise<LangiumDocument<T>> {
+  let nextDocumentId = 1;
   const metaData = services.LanguageMetaData;
-  const documentBuilder = services.shared.workspace.DocumentBuilder;
   return async (input, options = { validation: true }) => {
     const uri = URI.parse(
       options?.documentUri ??
@@ -54,7 +52,7 @@ export function parseHelper<T extends AstNode = AstNode>(
         options?.parserOptions,
       );
     services.shared.workspace.LangiumDocuments.addDocument(document);
-    await documentBuilder.build([document], options);
+    await services.shared.workspace.DocumentBuilder.build([document], options);
     return document;
   };
 }
@@ -67,9 +65,9 @@ export function hasErrors(document: LangiumDocument): boolean {
   return getDocumentErrors(document).length > 0;
 }
 
-export function getFormLangStringParser() {
-  const services = createFormLangServicesWithoutLsp(EmptyFileSystem);
-
+export function getFormLangStringParser(
+  services = createFormLangServicesWithoutLsp(EmptyFileSystem),
+) {
   return parseHelper<Model>(services.FormLang);
 }
 
@@ -78,8 +76,22 @@ export function getServices() {
 }
 
 export function serializeAst(
-  model: Model,
+  model: Model | Form,
   services: LangiumCoreServices,
 ): string {
   return services.serializer.JsonSerializer.serialize(model);
+}
+
+/** We assume that the source code contain only Form definition (single one per source code) and that the related components appear in the source code given in formComponentsCode and fieldComponentsCode */
+export async function computeAndSerializeAst(
+  sourceCode: string,
+  formComponentsCode: string,
+  fieldComponentsCode: string,
+) {
+  const services = createFormLangServicesWithoutLsp(EmptyFileSystem);
+  const stringParser = getFormLangStringParser(services);
+  const parsed = await stringParser(
+    `${formComponentsCode}\n${fieldComponentsCode}${sourceCode}`,
+  );
+  return serializeAst(parsed.parseResult.value.forms[0], services.FormLang);
 }
