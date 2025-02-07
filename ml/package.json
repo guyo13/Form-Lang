@@ -1,0 +1,15 @@
+{
+  "name": "ml",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib_server.cjs",
+  "scripts": {
+    "run": "node lib_server.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
