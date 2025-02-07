@@ -8,26 +8,13 @@ app.use(express.json());
 
 app.post("/compute/ast", async (req, res) => {
   try {
-    const { sourceCode, formComponentsCode, fieldComponentsCode } = req.body;
+    const { sourceCode, shouldCheckErrors = false } = req.body;
     if (!sourceCode) {
       return res
         .status(400)
         .json({ status: "error", error: "Missing sourceCode parameter" });
-    } else if (!formComponentsCode) {
-      return res
-        .status(400)
-        .json({ status: "error", error: "Missing formComponentsCode" });
-    } else if (!fieldComponentsCode) {
-      return res
-        .status(400)
-        .json({ status: "error", error: "Missing fieldComponentsCode" });
     }
-
-    const result = await computeAndSerializeAst(
-      sourceCode,
-      formComponentsCode,
-      fieldComponentsCode,
-    );
+    const result = await computeAndSerializeAst(sourceCode, shouldCheckErrors);
     res.json({ status: "ok", result });
   } catch (error) {
     console.error("Error processing request:", error);

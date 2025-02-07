@@ -3,7 +3,7 @@ import { GenerateOptions, parseFormLangString } from "./cli-util.js";
 import ProbabilisticSearchFormGenerator from "../generation/formGen.js";
 import {
   DEFAULT_GENERATOR_HYPER_PARAMETERS,
-  generateRandomFormPromptData,
+  generateRandomFormWithModification,
 } from "../lib/index.js";
 import { faker } from "@faker-js/faker";
 import chalk from "chalk";
@@ -60,7 +60,7 @@ export const generateDataAction = async (
       serializedModifiedForm,
       removedNodeEnglish,
       removedNodeContextEnglish,
-    } = generateRandomFormPromptData(formGen);
+    } = generateRandomFormWithModification(formGen);
     console.log("// serializedForm");
     console.log(serializedForm);
     console.log("// serializedModifiedForm");

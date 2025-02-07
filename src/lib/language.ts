@@ -85,13 +85,21 @@ export function serializeAst(
 /** We assume that the source code contain only Form definition (single one per source code) and that the related components appear in the source code given in formComponentsCode and fieldComponentsCode */
 export async function computeAndSerializeAst(
   sourceCode: string,
-  formComponentsCode: string,
-  fieldComponentsCode: string,
+  shouldCheckErrors: boolean = false,
 ) {
   const services = createFormLangServicesWithoutLsp(EmptyFileSystem);
   const stringParser = getFormLangStringParser(services);
-  const parsed = await stringParser(
-    `${formComponentsCode}\n${fieldComponentsCode}${sourceCode}`,
-  );
-  return serializeAst(parsed.parseResult.value.forms[0], services.FormLang);
+  const parsed = await stringParser(sourceCode);
+  let errors;
+  if (shouldCheckErrors) {
+    errors =
+      await services.FormLang.validation.DocumentValidator.validateDocument(
+        parsed,
+      );
+  }
+
+  return {
+    ast: serializeAst(parsed.parseResult.value.forms[0], services.FormLang),
+    errors,
+  };
 }
