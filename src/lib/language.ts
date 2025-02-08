@@ -95,6 +95,11 @@ export async function computeAndSerializeAst(
     errors =
       await services.FormLang.validation.DocumentValidator.validateDocument(
         parsed,
+        {
+          stopAfterLexingErrors: false,
+          stopAfterLinkingErrors: false,
+          stopAfterParsingErrors: false,
+        },
       );
   }
 
