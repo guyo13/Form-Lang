@@ -21,6 +21,7 @@ bitsandbytes = "^0.45.2"
 nltk = "^3.9.1"
 absl-py = "^2.1.0"
 rouge-score = "^0.1.2"
+nbdime = "^4.0.2"
 
 
 [build-system]
