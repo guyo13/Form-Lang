@@ -17,6 +17,7 @@ const randomFormsRequestSchema = z.object({
 
 Bun.serve({
   port: port,
+  reusePort: true,
   async fetch(req) {
     if (req.method === "POST" && req.url.endsWith("/compute/ast")) {
       try {
