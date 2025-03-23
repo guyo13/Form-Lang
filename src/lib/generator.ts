@@ -6,6 +6,7 @@ import ProbabilisticSearchFormGenerator, {
   ProbabilisticSearchParams,
 } from "../generation/formGen.js";
 import { getFormLangStringParser, hasErrors } from "./language.js";
+export { probabilisticSearchParamsSchema } from "../generation/formGen.js";
 
 export const DEFAULT_GENERATOR_HYPER_PARAMETERS = Object.freeze({
   alpha: 0.3,
@@ -57,9 +58,9 @@ export function generateRandomFormWithModification(
 
   return {
     form,
-    serializedForm,
     removedNode,
     removedNodeContext,
+    serializedForm,
     serializedModifiedForm,
     removedNodeEnglish,
     removedNodeContextEnglish,

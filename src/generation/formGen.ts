@@ -7,7 +7,7 @@ import { RANDOM_JS_EXPRESSIONS } from "./data.js";
 const probabilitySchema = z.number().min(0).lt(1);
 const integerSchema = z.number().min(0).int();
 
-const probabilisticSearchParamsSchema = z.object({
+export const probabilisticSearchParamsSchema = z.object({
   alpha: probabilitySchema,
   beta: probabilitySchema,
   gamma: probabilitySchema.optional().default(0),
