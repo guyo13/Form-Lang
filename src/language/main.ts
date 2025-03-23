@@ -1,7 +1,11 @@
-import { startLanguageServer } from 'langium/lsp';
-import { NodeFileSystem } from 'langium/node';
-import { createConnection, ProposedFeatures } from 'vscode-languageserver/node.js';
-import { createFormLangServices } from './form-lang-module.js';
+import { startLanguageServer } from "langium/lsp";
+import { NodeFileSystem } from "langium/node";
+import {
+  createConnection,
+  ProposedFeatures,
+} from "vscode-languageserver/node.js";
+
+import { createFormLangServices } from "./form-lang-module-lsp.js";
 
 // Create a connection to the client
 const connection = createConnection(ProposedFeatures.all);

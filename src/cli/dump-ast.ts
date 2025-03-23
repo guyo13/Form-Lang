@@ -1,24 +1,51 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { DefaultJsonSerializer, type LangiumCoreServices } from "langium";
+import * as prettier from "prettier";
+import type { LangiumCoreServices } from "langium";
 import type { Model } from "../language/generated/ast.js";
-import { extractDestinationAndName } from "./cli-util.js";
+import {
+  extractAstNode,
+  extractDestinationAndName,
+  GenerateOptions,
+} from "./cli-util.js";
+import { serializeAst } from "../lib/language.js";
+import { NodeFileSystem } from "langium/node";
+import chalk from "chalk";
+import { createFormLangServices } from "../language/form-lang-module-lsp.js";
 
-export function dumpAst(
+export async function dumpAst(
   model: Model,
   services: LangiumCoreServices,
   filePath: string,
-  destination: string | undefined
-): string {
+  destination: string | undefined,
+): Promise<string> {
   const data = extractDestinationAndName(filePath, destination);
   const dumpFilePath = `${path.join(data.destination, data.name)}.json`;
-  const serializer = new DefaultJsonSerializer(services);
-  const jsonString = serializer.serialize(model);
+  const json = serializeAst(model, services);
+  const formattedJsonString = await prettier.format(json, {
+    parser: "json",
+  });
+  console.log(formattedJsonString);
 
   if (!fs.existsSync(data.destination)) {
     fs.mkdirSync(data.destination, { recursive: true });
   }
-  fs.writeFileSync(dumpFilePath, jsonString);
+  fs.writeFileSync(dumpFilePath, formattedJsonString);
 
   return dumpFilePath;
 }
+
+export const dumpAstAction = async (
+  fileName: string,
+  opts: GenerateOptions,
+): Promise<void> => {
+  const services = createFormLangServices(NodeFileSystem).FormLang;
+  const model = await extractAstNode<Model>(fileName, services);
+  const dumpFilePath = await dumpAst(
+    model,
+    services,
+    fileName,
+    opts.destination,
+  );
+  console.log(chalk.green(`Ast successfully exported: ${dumpFilePath}`));
+};

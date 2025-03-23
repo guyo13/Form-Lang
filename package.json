@@ -26,20 +26,32 @@
     "dev:debug": "vite --debug --force",
     "serve": "corepack pnpm run dev",
     "test": "vitest run",
-    "ext:dev": "vsce package --no-dependencies --allow-missing-repository"
+    "ext:dev": "vsce package --no-dependencies --allow-missing-repository --skip-license"
+  },
+  "exports": {
+    "./library": {
+      "types": "./types/lib/index.d.ts",
+      "require": "./out/cjs/index.cjs",
+      "import": "./out/esm/index.mjs"
+    }
   },
   "dependencies": {
     "@codingame/monaco-vscode-editor-service-override": "~3.2.3",
     "@codingame/monaco-vscode-keybindings-service-override": "~3.2.3",
-    "@guyo13/langium-utils": "^1.0.1",
+    "@faker-js/faker": "^9.4.0",
+    "@guyo13/langium-utils": "^1.1.1",
     "chalk": "~5.3.0",
     "commander": "~11.0.0",
     "langium": "~3.3.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@~3.2.3",
     "monaco-editor-wrapper": "~4.0.2",
     "monaco-languageclient": "~8.1.1",
+    "prettier": "^3.4.2",
+    "tree-sitter": "^0.22.4",
+    "tree-sitter-javascript": "^0.23.1",
     "vscode-languageclient": "~9.0.1",
-    "vscode-languageserver": "~9.0.1"
+    "vscode-languageserver": "~9.0.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@codingame/esbuild-import-meta-url-plugin": "~1.0.2",
@@ -49,6 +61,7 @@
     "@typescript-eslint/parser": "~7.3.1",
     "@vscode/vsce": "^3.2.1",
     "concurrently": "~8.2.1",
+    "dependency-cruiser": "^16.9.0",
     "esbuild": "~0.20.2",
     "eslint": "~8.57.0",
     "http-server": "~14.1.1",
@@ -56,7 +69,8 @@
     "typescript": "~5.1.6",
     "vite": "~5.2.7",
     "vitest": "~1.4.0",
-    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3"
+    "vscode": "npm:@codingame/monaco-vscode-api@~3.2.3",
+    "vscode-languageserver-types": "^3.17.5"
   },
   "displayName": "form-lang",
   "engines": {

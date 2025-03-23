@@ -4,8 +4,10 @@
 !.vscode/tasks.json
 node_modules/
 out/
+types/
 src/language/generated/
 syntaxes/
 .DS_Store
 generated/
 *.vsix
+ml/.ipynb_checkpoints

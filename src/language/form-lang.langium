@@ -1,49 +1,68 @@
 grammar FormLang
+import "./terminals"
+import "./type"
+import "./component"
 
 entry Model:
     (forms+=Form | components+=ComponentDef | typeDefs+=TypeDef)*;
 
-TypeDef:
-    'type' name=ID '{'
-        (properties+=TypeProperty)*
-    '}';
+type FormChild = Form | Field;
 
-TypeProperty:
-    name=ID ':' type=[TypeDef:ID];
+type BuiltInType = 'string' | 'number' | 'boolean';
 
-ComponentDef:
-    'component' name=ID '{'
-        (properties+=ComponentDefPropKey)*
-    '}';
+interface Form {
+    name: string;
+    component: FieldComponentDef;
+    children: FormChild[];
+}
 
-ComponentDefPropKey:
-    key=ID;
+interface Field {
+    name: string;
+    state: FieldStateDef;
+    component: FieldComponentDef;
+}
 
-Form:
+interface FieldStateDef {
+    type: BuiltInType;
+    isArray: boolean;
+    defaultValue: ValueExpression;
+}
+
+interface FieldComponentDef {
+    componentId: @ComponentDef;
+    componentPropsKeys: ComponentPropKey[];
+    componentPropsValues: ValueExpression[];
+}
+
+interface ValueExpression {
+    value: string;
+    isExpression: boolean;
+}
+
+Form returns Form:
     'form' name=ID '{' 
+        component=FieldComponentDef
         (children+=FormChild)*
     '}';
 
-Field:
+Field returns Field:
     'field' name=ID '{'
-        (type=FieldTypeDef & component=FieldComponentDef)
+        (state=FieldStateDef)? (component=FieldComponentDef)
     '}';
 
-FieldTypeDef:
-    'type' type=[TypeDef:ID];
+FieldStateDef returns FieldStateDef:
+    'state' type=(BuiltInType)IsArray ('default' defaultValue=ValueExpression)?;
 
-FieldComponentDef:
-    'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentDefPropKey '=' componentPropsValues+=FieldComponentDefPropValue)*;
+BuiltInType returns BuiltInType:
+    ('string' | 'number' | 'boolean');
 
-FieldComponentDefPropValue:
-    value=STRING;
 
-FormChild:
+FieldComponentDef returns FieldComponentDef:
+    'comp' componentId=[ComponentDef:ID] (componentPropsKeys+=ComponentPropKey '=' componentPropsValues+=ValueExpression)*;
+
+ValueExpression returns ValueExpression:
+    value=STRING(isExpression?='as' 'expression')?;
+
+FormChild returns FormChild:
     (Form | Field);
 
-hidden terminal WS: /\s+/;
-terminal ID: /[_a-zA-Z][\w_]*/;
-terminal INT returns number: /[0-9]+/;
-terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
-hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
-hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;

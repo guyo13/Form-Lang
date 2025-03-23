@@ -1,21 +1,48 @@
-form lala {
+component myform {}
+
+component mynestedform {}
+
+component my_comp {
+    props {
+        prop1
+        prop2
+        prop3
+    }
+}
+component my_comp2 {
+}
+
+form LaLaForm {
+    comp myform
     field f1 {
-        type number
+        state number default "33"
         comp my_comp
     }
     field f2 {
-        type number
-        comp my_comp prop1="value1" prop2="value2"
+        state number[] default "[1,2,3]" as expression
+        comp my_comp prop1="value1" prop2="value2" prop3="3" as expression
     }
-    form nested {}
+    form nested {
+        comp mynestedform
+        field nested_f1 {
+            comp my_comp prop1="(() => 'value1')()" as expression
+        }
+        form nested2 {
+            comp mynestedform
+            field nested_f2 {
+                comp my_comp2
+            }
+        }
+    }
+    field f3 {
+        comp my_comp
+    }
 }
 
 
 form lala2 {
-    form nested {}
-}
-type number {}
-component my_comp {
-    prop1
-    prop2
+    comp myform
+    form nested {
+        comp mynestedform
+    }
 }
